@@ -139,6 +139,31 @@ body {
   padding: 12px 18px;
 }
 
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 0;
+}
+.crumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.crumb-up {
+  color: var(--ink-soft);
+}
+.crumb-now {
+  color: var(--orange-dark);
+}
+.crumb-sep {
+  color: var(--ink-soft);
+  opacity: 0.45;
+}
+
 .lang-toggle {
   display: flex;
   border: 1.5px solid var(--orange);

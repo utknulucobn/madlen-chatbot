@@ -162,6 +162,19 @@ export default function App() {
   const essayCache = useRef({});
   const t = T[lang];
 
+  // Where the user currently is, shown in the top bar so the screen is never
+  // ambiguous: Teacher > Lesson Prep Assistant, Teacher > Essay Grader, Student.
+  const crumbs =
+    view === "student"
+      ? [t.student]
+      : view === "teacherPick"
+      ? [t.teacher]
+      : view === "lesson"
+      ? [t.teacher, t.lesson]
+      : view === "essay"
+      ? [t.teacher, t.essay]
+      : [];
+
   /* ---- init from localStorage ---- */
   useEffect(() => {
     setLang(load("mc_lang", "en"));
@@ -551,6 +564,16 @@ export default function App() {
       {/* Main */}
       <div className="main">
         <div className="topbar">
+          {crumbs.length > 0 && (
+            <div className="crumbs">
+              {crumbs.map((c, i) => (
+                <span key={i} className="crumb-item">
+                  {i > 0 && <span className="crumb-sep">›</span>}
+                  <span className={i === crumbs.length - 1 ? "crumb-now" : "crumb-up"}>{c}</span>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="lang-toggle">
             <button className={lang === "en" ? "on" : ""} onClick={() => setLang("en")}>
               EN
