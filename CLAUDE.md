@@ -32,10 +32,12 @@ Teslim sahibi: Utkan Uluçoban. Case bağlamı ve donmuş spesifikasyon: `docs/S
 - Google API anahtarları artık `AQ.` ile başlıyor (Haziran 2026 geçişi) — header yöntemi kullanılıyor, sorun çözüldü.
 - `gemini-2.5-flash` yeni kullanıcılara kapatıldı → `GEMINI_MODEL=gemini-3.6-flash` env ile aşıldı. Benzer 404 gelirse hata mesajındaki önerilen model adına env'den geçilir.
 - Hata ayıklama: `/api/chat` yanıtındaki `detail` alanı Gemini'nin ham hatasını taşır (F12 → Network → chat → Response).
+- **Düşünme tokenları `maxOutputTokens` bütçesinden yiyor** (22 Ağu 2026): Türkçe ders planları 4. slaytın ortasında kesiliyordu — `thoughtsTokenCount` ~1970, cevap ~860, eski 2048 sınırı Türkçe'de aşılıyordu (İngilizce kıl payı sığdığı için fark edilmemişti). Lesson modunda sınır 8192'ye çıkarıldı. Başka bir mod kesilirse önce `finishReason`/`usage` alanlarına bakılır — bu alanlar teşhis için yanıtta bırakıldı.
 
 ## Açık işler (güncel tut)
-- [ ] Lesson Prep: sertleştirilmiş iskelet formatının testi (5 tam slayt + Visual suggestion + numaralı Discussion Questions)
+- [x] Lesson Prep: sertleştirilmiş iskelet formatının testi — TR+EN doğrulandı (22 Ağu 2026): 5 tam slayt, her slaytta görsel önerisi, 3 numaralı tartışma sorusu. Çıktı artık düz metin değil, slayt kartları olarak render ediliyor (`parseLesson`, beklenmedik biçimde düz metne düşer).
+- [ ] Lesson Prep: TR'de Akış satırındaki `Opening / Main activity / Closing` etiketleri İngilizce kalıyor (model iskeleti birebir taşıyor) — sistem talimatında etiketlerin de çevrilmesi istenebilir
 - [ ] Chatbot: ipucu merdiveni 3 kademe testi + kavram/alıştırma ayrımı + ders dışı sınır
 - [ ] Essay Grader: SCORES satırı → 4 puan çubuğu render + seviye kalibrasyonu testi
-- [ ] TR/EN anahtarı tam tur + mobil görünüm kontrolü
+- [ ] TR/EN anahtarı tam tur + mobil görünüm kontrolü (Lesson Prep slayt görünümü mobilde kontrol edildi ✓, diğer ekranlar kaldı)
 - [ ] Gerçek öğretmen testi (Utkan'ın annesi/babası)
