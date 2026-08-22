@@ -48,7 +48,7 @@ LESSON OUTLINE
 Objective: [first learning objective]
 Objective: [second learning objective]
 Key concepts: [comma separated list]
-Flow: Opening ([X] min) - [what happens]. Main activity ([X] min) - [what happens]. Closing ([X] min) - [what happens]. (minutes must add up to the lesson duration)
+Flow: Opening ([X] min) - [what happens]. Main activity ([X] min) - [what happens]. Closing ([X] min) - [what happens]. (minutes must add up to the lesson duration; write the stage names and the time unit in ${langName}, e.g. in Turkish: "Giris (5 dk)", "Ana etkinlik (25 dk)", "Kapanis (10 dk)")
 
 SLIDES
 Slide 1: [title]
@@ -111,50 +111,24 @@ STUDENT SUMMARY
 Plain text only, no markdown symbols.`;
   }
 
-  return `You are a helpful assistant. Reply in ${langName}.`;
-}
+  if (mode === "translate") {
+    return `You are a precise translator for a classroom app. Translate the document the user sends into ${langName}.
 
-// Temporary diagnostic: can this API key actually generate an image?
-export async function GET(req) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return Response.json({ error: "no key" }, { status: 500 });
-  const model = new URL(req.url).searchParams.get("m") || "gemini-3.1-flash-image";
-  const t0 = Date.now();
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: "A simple, friendly classroom illustration of a green leaf cross-section showing chloroplasts. Flat vector style, warm cream background.",
-              },
-            ],
-          },
-        ],
-      }),
-    }
-  );
-  const ms = Date.now() - t0;
-  if (!r.ok) {
-    return Response.json({ model, ok: false, ms, status: r.status, detail: (await r.text()).slice(0, 400) });
+RULES:
+- Keep the document structure identical: same line breaks, same order, same bullet characters, same numbering.
+- Do NOT translate the structural labels. Keep these exactly as they appear, in English:
+  LESSON OUTLINE, Objective:, Key concepts:, Flow:, SLIDES, Slide 1: ... Slide 5:, Visual suggestion:,
+  DISCUSSION QUESTIONS, SCORES:, TEACHER FEEDBACK, STUDENT SUMMARY
+- Translate everything else: titles, bullets, visual suggestions, questions, feedback.
+- Also translate the stage names inside the Flow line (Opening / Main activity / Closing) and time units
+  (min, minutes / dk, dakika) so the whole line reads naturally in ${langName}.
+- Leave the SCORES numbers untouched.
+- Keep quoted phrases from a student essay in their original language, then add the translation in
+  parentheses if it helps.
+- Output only the translated document. No preamble, no explanation.`;
   }
-  const data = await r.json();
-  const parts = data?.candidates?.[0]?.content?.parts || [];
-  const img = parts.find((x) => x.inlineData || x.inline_data);
-  const blob = img?.inlineData || img?.inline_data;
-  return Response.json({
-    model,
-    ok: !!blob,
-    ms,
-    mimeType: blob?.mimeType || blob?.mime_type,
-    bytes: blob?.data ? blob.data.length : 0,
-    usage: data?.usageMetadata,
-  });
+
+  return `You are a helpful assistant. Reply in ${langName}.`;
 }
 
 export async function POST(req) {
@@ -196,11 +170,11 @@ export async function POST(req) {
         },
         contents,
         generationConfig: {
-          temperature: mode === "essay" ? 0.4 : 0.7,
+          temperature: mode === "essay" ? 0.4 : mode === "translate" ? 0.2 : 0.7,
           // Lesson plans must fit the full skeleton (5 slides + discussion
           // questions). Turkish output is token-heavier than English and was
           // getting cut off mid-slide at 2048.
-          maxOutputTokens: mode === "lesson" ? 8192 : 2048,
+          maxOutputTokens: mode === "lesson" || mode === "translate" ? 8192 : 2048,
         },
       }),
     });

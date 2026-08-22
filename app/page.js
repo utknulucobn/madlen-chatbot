@@ -51,6 +51,7 @@ const T = {
     questionsTitle: "Discussion questions",
     slideWord: "Slide",
     visualLabel: "Visual",
+    translating: "Translating this output...",
     errGeneric: "Something went wrong. Please try again.",
     errRate: "The free usage limit was reached for now. Please try again in a minute.",
     errKey: "The server API key seems invalid.",
@@ -102,6 +103,7 @@ const T = {
     questionsTitle: "Tartışma soruları",
     slideWord: "Slayt",
     visualLabel: "Görsel",
+    translating: "Bu çıktı çevriliyor...",
     errGeneric: "Bir şeyler ters gitti. Lütfen tekrar dene.",
     errRate: "Ücretsiz kullanım limiti şimdilik doldu. Bir dakika sonra tekrar dene.",
     errKey: "Sunucudaki API anahtarı geçersiz görünüyor.",
@@ -149,8 +151,10 @@ export default function App() {
   const [essay, setEssay] = useState("");
   const [essayOut, setEssayOut] = useState("");
   const [copied, setCopied] = useState(false);
+  const [translating, setTranslating] = useState(false);
 
   const endRef = useRef(null);
+  const prevLang = useRef(null);
   const t = T[lang];
 
   /* ---- init from localStorage ---- */
@@ -235,6 +239,38 @@ export default function App() {
       setBusy(false);
     }
   };
+
+  /* ---- re-translate visible output when the language is switched ----
+     Switching TR/EN used to relabel the UI while leaving the generated
+     document in the old language. Send it back through the model instead,
+     preserving the structural labels the renderer parses. */
+  useEffect(() => {
+    if (prevLang.current === null) {
+      prevLang.current = lang;
+      return;
+    }
+    if (prevLang.current === lang) return;
+    prevLang.current = lang;
+    if (!lessonOut && !essayOut) return;
+
+    let cancelled = false;
+    (async () => {
+      setTranslating(true);
+      if (lessonOut) {
+        const out = await callApi("translate", [{ role: "user", content: lessonOut }], {});
+        if (!cancelled && out) setLessonOut(out);
+      }
+      if (essayOut) {
+        const out = await callApi("translate", [{ role: "user", content: essayOut }], {});
+        if (!cancelled && out) setEssayOut(out);
+      }
+      if (!cancelled) setTranslating(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   /* ---- student send ---- */
   const sendStudent = async () => {
@@ -581,6 +617,7 @@ export default function App() {
                   </button>
                   {err && <div className="error">{err}</div>}
                 </div>
+                {translating && <div className="translating">{t.translating}</div>}
                 {lessonOut &&
                   (() => {
                     const L = parseLesson(lessonOut);
@@ -666,6 +703,7 @@ export default function App() {
                   </button>
                   {err && <div className="error">{err}</div>}
                 </div>
+                {translating && <div className="translating">{t.translating}</div>}
                 {essayOut && (
                   <div className="result">
                     {(() => {
