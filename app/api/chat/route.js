@@ -187,7 +187,13 @@ export async function POST(req) {
       return Response.json({ error: "empty" }, { status: 502 });
     }
 
-    return Response.json({ text });
+    // Diagnostics: why generation stopped and how the token budget was spent.
+    // Harmless extra fields; the client only reads `text`.
+    return Response.json({
+      text,
+      finishReason: data?.candidates?.[0]?.finishReason,
+      usage: data?.usageMetadata,
+    });
   } catch (e) {
     console.error(e);
     return Response.json({ error: "server" }, { status: 500 });
