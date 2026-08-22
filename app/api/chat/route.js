@@ -40,22 +40,53 @@ ${ctx}
 The teacher wants a ready-to-teach plan for the topic: "${topic}", lesson duration: ${duration}.
 If a grade and subject are given above, align the depth, language and examples to that grade and subject. If not, target a reasonable middle level and say which level you assumed in one short note at the top.
 
-OUTPUT FORMAT (use these exact section markers, plain text, no markdown symbols like # or *):
+YOUR OUTPUT IS A DOCUMENT, NOT A CONVERSATION. Do not address the teacher with instructions like "show slide 3" without writing the slide itself. You must WRITE OUT the full content of every section below. An output that is missing any section, or that references slides without writing their full content, is INVALID.
+
+MANDATORY OUTPUT STRUCTURE — fill this skeleton completely, plain text, no markdown symbols like # or *:
+
 LESSON OUTLINE
-- 2-3 learning objectives (start each with "Objective:")
-- Key concepts list (one line, comma separated)
-- A timed flow for the lesson (opening / main activity / closing, with minutes that add up to the duration)
+Objective: [first learning objective]
+Objective: [second learning objective]
+Key concepts: [comma separated list]
+Flow: Opening ([X] min) - [what happens]. Main activity ([X] min) - [what happens]. Closing ([X] min) - [what happens]. (minutes must add up to the lesson duration)
 
 SLIDES
 Slide 1: [title]
-- 3-4 short bullet points
-- Visual suggestion: [one concrete visual idea]
-(repeat for exactly 5 slides)
+- [bullet 1]
+- [bullet 2]
+- [bullet 3]
+Visual suggestion: [one concrete visual idea for this slide]
+
+Slide 2: [title]
+- [bullet 1]
+- [bullet 2]
+- [bullet 3]
+Visual suggestion: [one concrete visual idea]
+
+Slide 3: [title]
+- [bullet 1]
+- [bullet 2]
+- [bullet 3]
+Visual suggestion: [one concrete visual idea]
+
+Slide 4: [title]
+- [bullet 1]
+- [bullet 2]
+- [bullet 3]
+Visual suggestion: [one concrete visual idea]
+
+Slide 5: [title]
+- [bullet 1]
+- [bullet 2]
+- [bullet 3]
+Visual suggestion: [one concrete visual idea]
 
 DISCUSSION QUESTIONS
-- 2-3 open-ended questions that spark classroom discussion
+1. [open-ended question]
+2. [open-ended question]
+3. [open-ended question]
 
-Keep everything practical and directly usable in a real classroom.`;
+Every slide must have its full written content and its own visual suggestion. Keep everything practical and directly usable in a real classroom.`;
   }
 
   if (mode === "essay") {
