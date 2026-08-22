@@ -27,6 +27,7 @@ Teslim sahibi: Utkan Uluçoban. Case bağlamı ve donmuş spesifikasyon: `docs/S
 3. Tek seferde tek konu; büyük refactor yapma. Site canlı ve bu akşam teslim ediliyor — çalışan şeyi bozmamak her şeyden önemli.
 4. Utkan'la **Türkçe** konuş; kod/commit mesajları İngilizce kalabilir.
 5. `docs/SPEC.md` ile çelişen bir istek gelirse çelişkiyi belirtip sor.
+6. **Kota kuralı:** Gemini ücretsiz katmanı sınırlı. Her kod değişikliğinden sonra canlı `/api/chat`'e test isteği ATMA — kotayı Utkan'ın kendi denemeleri için sakla. Doğrulama, kod okuma ve (gerekirse) API'ye dokunmayan tarayıcı kontrolüyle yapılır; canlı istek gerekiyorsa önce Utkan'a sorulur. Kota dolarsa `/api/chat` 429 döner ve site kullanıcıya hata gösterir.
 
 ## Bilinen geçmiş sorunlar (tekrar yaşanırsa)
 - Google API anahtarları artık `AQ.` ile başlıyor (Haziran 2026 geçişi) — header yöntemi kullanılıyor, sorun çözüldü.
@@ -41,3 +42,5 @@ Teslim sahibi: Utkan Uluçoban. Case bağlamı ve donmuş spesifikasyon: `docs/S
 - [ ] Essay Grader: SCORES satırı → 4 puan çubuğu render + seviye kalibrasyonu testi
 - [ ] TR/EN anahtarı tam tur + mobil görünüm kontrolü (Lesson Prep slayt görünümü mobilde kontrol edildi ✓, diğer ekranlar kaldı)
 - [ ] Gerçek öğretmen testi (Utkan'ın annesi/babası)
+- [ ] Dil değişiminde çıktının çevrilmesi (`translate` modu) — yayında ama canlı doğrulanmadı, kota nedeniyle testi Utkan yapacak
+- [ ] Slaytlara gerçek görsel: ücretsiz katmanda görsel üretim kotası **sıfır** (4 model denendi, hepsi `429 limit: 0`). Çözüm ya Google'da faturalandırma ya da Wikimedia'dan telifsiz görsel. Utkan'ın kararı bekleniyor — şimdilik görsel önerisi yazı olarak kalıyor.
