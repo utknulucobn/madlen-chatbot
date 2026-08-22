@@ -577,6 +577,26 @@ body {
   border-radius: 50%;
   background: var(--orange);
 }
+.slide-figure {
+  margin: 12px 0 2px;
+  padding: 8px;
+  background: var(--cream);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+.slide-figure svg {
+  width: 100%;
+  height: auto;
+  max-height: 190px;
+  display: block;
+}
+.slide-figure text {
+  font-family: "Quicksand", system-ui, sans-serif;
+  font-weight: 600;
+}
+
 .slide-visual {
   display: flex;
   align-items: baseline;

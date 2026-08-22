@@ -384,11 +384,37 @@ export default function App() {
     akış: { en: "Flow", tr: "Akış" },
   };
 
+  /* ---- SVG safety gate ----
+     The drawing arrives as model-generated markup, so it is never trusted.
+     Anything outside a small drawing-only allowlist rejects the whole figure
+     and the slide falls back to its written visual suggestion. */
+  const SVG_ALLOWED = new Set([
+    "svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline",
+    "polygon", "text", "tspan", "defs", "marker", "lineargradient", "stop", "title",
+  ]);
+
+  const safeSvg = (raw) => {
+    const svg = (raw || "").trim();
+    if (!svg || svg.length > 6000) return "";
+    if (!/^<svg[\s>]/i.test(svg) || !/<\/svg>$/i.test(svg)) return "";
+    // No scripting, no navigation, no external or embedded resources.
+    if (/\son[a-z]+\s*=/i.test(svg)) return "";
+    if (/(href|src|xlink:href|javascript:|data:text\/html|<!--|<!\[CDATA)/i.test(svg)) return "";
+    // Every element must be on the allowlist.
+    const tags = svg.match(/<\/?\s*([a-zA-Z][\w:.-]*)/g) || [];
+    for (const tag of tags) {
+      const name = tag.replace(/[<\/\s]/g, "").toLowerCase();
+      if (!SVG_ALLOWED.has(name)) return "";
+    }
+    return svg;
+  };
+
   const parseLesson = (out) => {
     if (!out) return null;
 
     const slideRe = /^\s*(?:slide|slayt)\s*(\d+)\s*[:.)\-–]\s*(.*)$/i;
     const visualRe = /^\s*(?:visual suggestion|g[öo]rsel [öo]nerisi|visual|g[öo]rsel)\s*:\s*(.*)$/i;
+    const svgRe = /^\s*(?:visual svg|g[öo]rsel svg|svg)\s*:\s*(<svg[\s\S]*<\/svg>)\s*$/i;
     const bulletRe = /^\s*[-•*]\s*(.+)$/;
     const numberedRe = /^\s*\d+\s*[.)]\s*(.+)$/;
     const outlineRe = /^\s*([^:]{2,40}?)\s*:\s*(.+)$/;
@@ -441,7 +467,12 @@ export default function App() {
         const m = line.match(slideRe);
         if (m) {
           closeSlide();
-          cur = { n: m[1], title: m[2].trim(), bullets: [], visual: "" };
+          cur = { n: m[1], title: m[2].trim(), bullets: [], visual: "", svg: "" };
+          continue;
+        }
+        const g = line.match(svgRe);
+        if (g && cur) {
+          cur.svg = safeSvg(g[1]);
           continue;
         }
         const v = line.match(visualRe);
@@ -698,6 +729,12 @@ export default function App() {
                                   <li key={j}>{b}</li>
                                 ))}
                               </ul>
+                              {sl.svg && (
+                                <div
+                                  className="slide-figure"
+                                  dangerouslySetInnerHTML={{ __html: sl.svg }}
+                                />
+                              )}
                               {sl.visual && (
                                 <div className="slide-visual">
                                   <span className="visual-tag">{t.visualLabel}</span>

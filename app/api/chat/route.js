@@ -56,37 +56,59 @@ Slide 1: [title]
 - [bullet 2]
 - [bullet 3]
 Visual suggestion: [one concrete visual idea for this slide]
+Visual SVG: [a single-line SVG drawing of that idea, see the SVG rules below]
 
 Slide 2: [title]
 - [bullet 1]
 - [bullet 2]
 - [bullet 3]
 Visual suggestion: [one concrete visual idea]
+Visual SVG: [a single-line SVG drawing of that idea, see the SVG rules below]
 
 Slide 3: [title]
 - [bullet 1]
 - [bullet 2]
 - [bullet 3]
 Visual suggestion: [one concrete visual idea]
+Visual SVG: [a single-line SVG drawing of that idea, see the SVG rules below]
 
 Slide 4: [title]
 - [bullet 1]
 - [bullet 2]
 - [bullet 3]
 Visual suggestion: [one concrete visual idea]
+Visual SVG: [a single-line SVG drawing of that idea, see the SVG rules below]
 
 Slide 5: [title]
 - [bullet 1]
 - [bullet 2]
 - [bullet 3]
 Visual suggestion: [one concrete visual idea]
+Visual SVG: [a single-line SVG drawing of that idea, see the SVG rules below]
 
 DISCUSSION QUESTIONS
 1. [open-ended question]
 2. [open-ended question]
 3. [open-ended question]
 
-Every slide must have its full written content and its own visual suggestion. Keep everything practical and directly usable in a real classroom.`;
+Every slide must have its full written content, its own visual suggestion and its own Visual SVG line.
+
+SVG RULES (the Visual SVG line is drawn on the slide, so it must be valid and self-contained):
+- One single line, no line breaks inside it, starting with <svg and ending with </svg>.
+- Always: <svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg">.
+- Draw a diagram, not a picture: axes and a curve for a function, labelled boxes and arrows for a
+  reaction or a process, a cross-section made of simple shapes, a cycle of arrows. Schematic, not artistic.
+- Keep it SIMPLE: at most 14 shapes. Short labels only (1-3 words), font-size 9 to 12.
+- Allowed elements ONLY: g, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, defs,
+  marker, linearGradient, stop, title. Never use script, image, foreignObject, use, a, or any href/src
+  attribute, and never add event attributes such as onclick.
+- Palette: strokes and accents #e8842c, dark ink #3e3226, soft fill #f7d9bd, background left transparent.
+  Use stroke-width 2, rounded shapes where natural.
+- Label text must be in ${langName}.
+- If the topic genuinely cannot be diagrammed, still draw a simple symbolic schematic rather than
+  skipping the line.
+
+Keep everything practical and directly usable in a real classroom.`;
   }
 
   if (mode === "essay") {
@@ -125,6 +147,9 @@ ABSOLUTE RULES:
 - Translate everything after those labels, including the stage names inside the Flow line
   (Opening / Main activity / Closing) and the time unit (min / dk).
 - Leave the numbers on the SCORES line untouched.
+- On a "Visual SVG:" line, reproduce the markup exactly as it is. Translate ONLY the words that sit
+  between <text> and </text> (or <tspan> and </tspan>). Change nothing else: no attributes, no numbers,
+  no element names.
 - If the document is already in ${langName}, output it unchanged.`;
   }
 
