@@ -12,7 +12,7 @@ Teslim sahibi: Utkan Uluçoban. Case bağlamı ve donmuş spesifikasyon: `docs/S
 ## Mimari (kısa)
 - Next.js 14 App Router. Tek sayfa client app: `app/page.js` (tüm arayüz + i18n + localStorage geçmişi). Stil: `app/globals.css` (krem-turuncu Madlen paleti, Quicksand fontu).
 - API köprüsü: `app/api/chat/route.js` → Google Gemini `generateContent`.
-  - Model: `GEMINI_MODEL` env değişkeninden okunur (şu an **gemini-3.6-flash**; varsayılan koddaki değer eski kalabilir, env kazanır).
+  - Model: `GEMINI_MODEL` env değişkeninden okunur (şu an **gemini-3.5-flash-lite**; 22 Ağu 2026'da gemini-3.6-flash'tan geçildi, sebep aşağıdaki kota notu. Varsayılan koddaki değer eski kalabilir, env kazanır).
   - Anahtar: `GEMINI_API_KEY` env değişkeni, **`x-goog-api-key` header** ile gönderilir (yeni `AQ.` formatlı anahtarlar query paramla sorun çıkarabiliyor — header yolu doğrulandı).
 - Üç ürünün davranışı `route.js` içindeki `systemPrompt()` fonksiyonundaki sistem talimatlarında tanımlı. Chatbot'un ipucu merdiveni (1. yönlendirme → 2. somut ipucu → 3. çözüm yolu, sonuç asla verilmez) bu projenin kalbidir — değiştirilmeden önce mutlaka Utkan'a sorulur.
 
@@ -32,6 +32,8 @@ Teslim sahibi: Utkan Uluçoban. Case bağlamı ve donmuş spesifikasyon: `docs/S
 ## Bilinen geçmiş sorunlar (tekrar yaşanırsa)
 - Google API anahtarları artık `AQ.` ile başlıyor (Haziran 2026 geçişi) — header yöntemi kullanılıyor, sorun çözüldü.
 - `gemini-2.5-flash` yeni kullanıcılara kapatıldı → `GEMINI_MODEL=gemini-3.6-flash` env ile aşıldı. Benzer 404 gelirse hata mesajındaki önerilen model adına env'den geçilir.
+- **Günlük kota çok dar** (22 Ağu 2026): `gemini-3.6-flash` ücretsiz katmanda **günde 20 istek** veriyordu ve doldu (`Peak RPD 23/20`). Kotalar model başına ayrı tutulduğu için `GEMINI_MODEL=gemini-3.5-flash-lite`'a geçilerek aşıldı; "lite" modeller ve Gemma'lar daha cömert. Aynı sorun tekrarlarsa: AI Studio > rate-limit sayfasından model limitine bak, env'i değiştir, **Vercel > Deployments > Redeploy** (env değişikliği tek başına deploy tetiklemez). Kalıcı çözüm faturalandırma.
+- Kota tüketimi: dil değiştirme başına 1 çeviri isteği gidiyordu; doküman başına dil-başına-bir-kez önbellek eklendi (`lessonCache`/`essayCache`).
 - Hata ayıklama: `/api/chat` yanıtındaki `detail` alanı Gemini'nin ham hatasını taşır (F12 → Network → chat → Response).
 - **Düşünme tokenları `maxOutputTokens` bütçesinden yiyor** (22 Ağu 2026): Türkçe ders planları 4. slaytın ortasında kesiliyordu — `thoughtsTokenCount` ~1970, cevap ~860, eski 2048 sınırı Türkçe'de aşılıyordu (İngilizce kıl payı sığdığı için fark edilmemişti). Lesson modunda sınır 8192'ye çıkarıldı. Başka bir mod kesilirse önce `finishReason`/`usage` alanlarına bakılır — bu alanlar teşhis için yanıtta bırakıldı.
 
