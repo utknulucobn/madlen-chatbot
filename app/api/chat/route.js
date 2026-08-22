@@ -112,20 +112,20 @@ Plain text only, no markdown symbols.`;
   }
 
   if (mode === "translate") {
-    return `You are a precise translator for a classroom app. Translate the document the user sends into ${langName}.
+    return `You are a machine translation function, not an assistant. Translate the document into ${langName}.
 
-RULES:
-- Keep the document structure identical: same line breaks, same order, same bullet characters, same numbering.
-- Do NOT translate the structural labels. Keep these exactly as they appear, in English:
-  LESSON OUTLINE, Objective:, Key concepts:, Flow:, SLIDES, Slide 1: ... Slide 5:, Visual suggestion:,
-  DISCUSSION QUESTIONS, SCORES:, TEACHER FEEDBACK, STUDENT SUMMARY
-- Translate everything else: titles, bullets, visual suggestions, questions, feedback.
-- Also translate the stage names inside the Flow line (Opening / Main activity / Closing) and time units
-  (min, minutes / dk, dakika) so the whole line reads naturally in ${langName}.
-- Leave the SCORES numbers untouched.
-- Keep quoted phrases from a student essay in their original language, then add the translation in
-  parentheses if it helps.
-- Output only the translated document. No preamble, no explanation.`;
+ABSOLUTE RULES:
+- Output ONLY the translated document. No preface, no closing remark, no explanation.
+- Do not summarise, expand, reorder, merge or improve anything. Translate what is there, nothing more.
+- Produce exactly the same number of lines, in the same order, with the same bullet and numbering characters.
+- Never introduce markdown: no #, no **, no ---, no tables.
+- Keep these structural labels in English, character for character:
+  LESSON OUTLINE / Objective: / Key concepts: / Flow: / SLIDES / Slide 1: ... Slide 5: /
+  Visual suggestion: / DISCUSSION QUESTIONS / SCORES: / TEACHER FEEDBACK / STUDENT SUMMARY
+- Translate everything after those labels, including the stage names inside the Flow line
+  (Opening / Main activity / Closing) and the time unit (min / dk).
+- Leave the numbers on the SCORES line untouched.
+- If the document is already in ${langName}, output it unchanged.`;
   }
 
   return `You are a helpful assistant. Reply in ${langName}.`;
@@ -158,6 +158,41 @@ export async function POST(req) {
       role: m.role === "user" ? "user" : "model",
       parts: [{ text: String(m.content || "").slice(0, 12000) }],
     }));
+
+    // The translator drifts into rewriting the document unless it is shown
+    // exactly what a faithful, structure-preserving translation looks like.
+    if (mode === "translate") {
+      const shotIn = [
+        "LESSON OUTLINE",
+        "Objective: Bitkilerin nasil beslendigini aciklar.",
+        "Flow: Opening (5 dk) - Merak uyandirici soru sorulur.",
+        "",
+        "SLIDES",
+        "Slide 1: Fotosentez Nedir?",
+        "- Bitkiler kendi besinini uretir.",
+        "Visual suggestion: Yesil bir yaprak cizimi.",
+        "",
+        "DISCUSSION QUESTIONS",
+        "1. Bitkiler neden yesildir?",
+      ].join("\n");
+      const shotOut = [
+        "LESSON OUTLINE",
+        "Objective: Explains how plants feed themselves.",
+        "Flow: Opening (5 min) - A curiosity-sparking question is asked.",
+        "",
+        "SLIDES",
+        "Slide 1: What is Photosynthesis?",
+        "- Plants produce their own food.",
+        "Visual suggestion: A drawing of a green leaf.",
+        "",
+        "DISCUSSION QUESTIONS",
+        "1. Why are plants green?",
+      ].join("\n");
+      contents.unshift(
+        { role: "user", parts: [{ text: shotIn }] },
+        { role: "model", parts: [{ text: shotOut }] }
+      );
+    }
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
