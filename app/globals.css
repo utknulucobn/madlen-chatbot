@@ -340,7 +340,7 @@ body {
 
 .input-bar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 10px;
   background: var(--white);
   border: 1.5px solid #e0d3bc;
