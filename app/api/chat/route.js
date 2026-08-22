@@ -111,11 +111,11 @@ export async function POST(req) {
       parts: [{ text: String(m.content || "").slice(0, 12000) }],
     }));
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
     const r = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         systemInstruction: {
           parts: [{ text: systemPrompt(mode, lang, grade, subject, meta) }],
@@ -134,10 +134,13 @@ export async function POST(req) {
       const friendly =
         r.status === 429
           ? "rate_limit"
-          : r.status === 400 && errText.includes("API key")
+          : errText.toLowerCase().includes("api key") || r.status === 401 || r.status === 403
           ? "bad_key"
           : "upstream";
-      return Response.json({ error: friendly }, { status: 502 });
+      return Response.json(
+        { error: friendly, status: r.status, detail: errText.slice(0, 300) },
+        { status: 502 }
+      );
     }
 
     const data = await r.json();
