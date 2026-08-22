@@ -114,19 +114,47 @@ Plain text only, no markdown symbols.`;
   return `You are a helpful assistant. Reply in ${langName}.`;
 }
 
-// Temporary diagnostic: which models does this API key actually have access to?
-export async function GET() {
+// Temporary diagnostic: can this API key actually generate an image?
+export async function GET(req) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return Response.json({ error: "no key" }, { status: 500 });
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
-    headers: { "x-goog-api-key": apiKey },
-  });
+  const model = new URL(req.url).searchParams.get("m") || "gemini-3.1-flash-image";
+  const t0 = Date.now();
+  const r = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: "A simple, friendly classroom illustration of a green leaf cross-section showing chloroplasts. Flat vector style, warm cream background.",
+              },
+            ],
+          },
+        ],
+      }),
+    }
+  );
+  const ms = Date.now() - t0;
+  if (!r.ok) {
+    return Response.json({ model, ok: false, ms, status: r.status, detail: (await r.text()).slice(0, 400) });
+  }
   const data = await r.json();
-  const models = (data?.models || []).map((m) => ({
-    name: m.name,
-    methods: m.supportedGenerationMethods,
-  }));
-  return Response.json({ count: models.length, models });
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const img = parts.find((x) => x.inlineData || x.inline_data);
+  const blob = img?.inlineData || img?.inline_data;
+  return Response.json({
+    model,
+    ok: !!blob,
+    ms,
+    mimeType: blob?.mimeType || blob?.mime_type,
+    bytes: blob?.data ? blob.data.length : 0,
+    usage: data?.usageMetadata,
+  });
 }
 
 export async function POST(req) {
