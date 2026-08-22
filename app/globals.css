@@ -482,6 +482,133 @@ body {
   margin-top: 10px;
 }
 
+/* ---------- Lesson plan: outline, slide deck, questions ---------- */
+.lesson-doc {
+  margin-top: 16px;
+}
+.lesson-block {
+  background: var(--white);
+  border: 1px solid #eadfcb;
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 18px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.block-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--orange-dark);
+  margin-bottom: 12px;
+}
+.deck-title {
+  margin: 4px 0 12px 2px;
+}
+.outline-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.outline-row:last-child {
+  margin-bottom: 0;
+}
+.outline-label {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--ink);
+}
+.outline-label::after {
+  content: ":";
+}
+
+.slide-deck {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.slide-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 210px;
+  background: var(--white);
+  border: 1px solid #eadfcb;
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: 0 2px 10px rgba(62, 50, 38, 0.05);
+}
+.slide-num {
+  align-self: flex-start;
+  background: var(--orange-soft);
+  color: var(--orange-dark);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 4px 11px;
+  margin-bottom: 10px;
+}
+.slide-title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+.slide-bullets {
+  flex: 1;
+  list-style: none;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.slide-bullets li {
+  position: relative;
+  padding-left: 16px;
+  margin-bottom: 7px;
+}
+.slide-bullets li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+.slide-visual {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #e6d9c2;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.visual-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--orange-dark);
+}
+
+.question-list {
+  padding-left: 20px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.question-list li {
+  margin-bottom: 8px;
+}
+.question-list li:last-child {
+  margin-bottom: 0;
+}
+
 /* ---------- Mobile ---------- */
 @media (max-width: 760px) {
   .sidebar {
@@ -489,5 +616,8 @@ body {
   }
   .bottom {
     left: 0;
+  }
+  .slide-deck {
+    grid-template-columns: 1fr;
   }
 }

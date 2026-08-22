@@ -154,7 +154,10 @@ export async function POST(req) {
         contents,
         generationConfig: {
           temperature: mode === "essay" ? 0.4 : 0.7,
-          maxOutputTokens: 2048,
+          // Lesson plans must fit the full skeleton (5 slides + discussion
+          // questions). Turkish output is token-heavier than English and was
+          // getting cut off mid-slide at 2048.
+          maxOutputTokens: mode === "lesson" ? 8192 : 2048,
         },
       }),
     });

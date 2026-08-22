@@ -46,6 +46,11 @@ const T = {
     copy: "Copy",
     copied: "Copied!",
     scoreLabels: { argument: "Argument", clarity: "Clarity", structure: "Structure", language: "Language" },
+    outlineTitle: "Lesson outline",
+    slidesTitle: "Slides",
+    questionsTitle: "Discussion questions",
+    slideWord: "Slide",
+    visualLabel: "Visual",
     errGeneric: "Something went wrong. Please try again.",
     errRate: "The free usage limit was reached for now. Please try again in a minute.",
     errKey: "The server API key seems invalid.",
@@ -92,6 +97,11 @@ const T = {
     copy: "Kopyala",
     copied: "Kopyalandı!",
     scoreLabels: { argument: "Argüman", clarity: "Açıklık", structure: "Yapı", language: "Dil" },
+    outlineTitle: "Ders taslağı",
+    slidesTitle: "Slaytlar",
+    questionsTitle: "Tartışma soruları",
+    slideWord: "Slayt",
+    visualLabel: "Görsel",
     errGeneric: "Bir şeyler ters gitti. Lütfen tekrar dene.",
     errRate: "Ücretsiz kullanım limiti şimdilik doldu. Bir dakika sonra tekrar dene.",
     errKey: "Sunucudaki API anahtarı geçersiz görünüyor.",
@@ -285,6 +295,104 @@ export default function App() {
   };
   const essayBody = (out) => out.replace(/SCORES:[^\n]*\n?/i, "").trim();
 
+  /* ---- lesson plan parsing ----
+     Turns the model's plain-text skeleton into an outline, slide cards and
+     discussion questions. Label-tolerant: the model keeps the English labels
+     even when writing Turkish, but may translate them. Returns null on any
+     unexpected shape so the raw text is rendered instead. */
+  const OUTLINE_LABELS = {
+    objective: { en: "Objective", tr: "Hedef" },
+    "key concepts": { en: "Key concepts", tr: "Anahtar kavramlar" },
+    flow: { en: "Flow", tr: "Akış" },
+    hedef: { en: "Objective", tr: "Hedef" },
+    "anahtar kavramlar": { en: "Key concepts", tr: "Anahtar kavramlar" },
+    akış: { en: "Flow", tr: "Akış" },
+  };
+
+  const parseLesson = (out) => {
+    if (!out) return null;
+
+    const slideRe = /^\s*(?:slide|slayt)\s*(\d+)\s*[:.)\-–]\s*(.*)$/i;
+    const visualRe = /^\s*(?:visual suggestion|g[öo]rsel [öo]nerisi|visual|g[öo]rsel)\s*:\s*(.*)$/i;
+    const bulletRe = /^\s*[-•*]\s*(.+)$/;
+    const numberedRe = /^\s*\d+\s*[.)]\s*(.+)$/;
+    const outlineRe = /^\s*([^:]{2,40}?)\s*:\s*(.+)$/;
+    const isHead = (line, words) =>
+      words.some((w) => new RegExp(`^\\s*${w}\\s*:?\\s*$`, "i").test(line));
+
+    const outline = [];
+    const slides = [];
+    const questions = [];
+    let section = "outline";
+    let cur = null;
+
+    const closeSlide = () => {
+      if (cur) slides.push(cur);
+      cur = null;
+    };
+
+    for (const raw of out.split("\n")) {
+      const line = raw.trim();
+      if (!line) continue;
+
+      if (isHead(line, ["slides", "slaytlar"])) {
+        closeSlide();
+        section = "slides";
+        continue;
+      }
+      if (isHead(line, ["discussion questions", "tart[ıi][şs]ma sorular[ıi]"])) {
+        closeSlide();
+        section = "questions";
+        continue;
+      }
+      if (isHead(line, ["lesson outline", "ders tasla[ğg][ıi]", "outline"])) {
+        section = "outline";
+        continue;
+      }
+
+      if (section === "outline") {
+        const m = line.match(outlineRe);
+        if (m) {
+          const key = m[1].trim().toLowerCase();
+          const label = OUTLINE_LABELS[key] ? OUTLINE_LABELS[key][lang] : m[1].trim();
+          outline.push({ label, value: m[2].trim() });
+        } else {
+          outline.push({ label: "", value: line });
+        }
+        continue;
+      }
+
+      if (section === "slides") {
+        const m = line.match(slideRe);
+        if (m) {
+          closeSlide();
+          cur = { n: m[1], title: m[2].trim(), bullets: [], visual: "" };
+          continue;
+        }
+        const v = line.match(visualRe);
+        if (v && cur) {
+          cur.visual = v[1].trim();
+          continue;
+        }
+        const b = line.match(bulletRe);
+        if (b && cur) {
+          cur.bullets.push(b[1].trim());
+          continue;
+        }
+        if (cur) cur.bullets.push(line);
+        continue;
+      }
+
+      const q = line.match(numberedRe);
+      questions.push(q ? q[1].trim() : line);
+    }
+    closeSlide();
+
+    // Not the expected shape - let the caller fall back to raw text.
+    if (!slides.length) return null;
+    return { outline, slides, questions };
+  };
+
   /* ---- context bar (teacher tools) ---- */
   const ContextBar = () => (
     <div className="context-bar">
@@ -473,15 +581,74 @@ export default function App() {
                   </button>
                   {err && <div className="error">{err}</div>}
                 </div>
-                {lessonOut && (
-                  <div className="result">
-                    {lessonOut}
-                    {"\n"}
-                    <button className="copy-btn" onClick={() => doCopy(lessonOut)}>
-                      {copied ? t.copied : t.copy}
-                    </button>
-                  </div>
-                )}
+                {lessonOut &&
+                  (() => {
+                    const L = parseLesson(lessonOut);
+                    // Unexpected shape: fall back to the plain text output.
+                    if (!L)
+                      return (
+                        <div className="result">
+                          {lessonOut}
+                          {"\n"}
+                          <button className="copy-btn" onClick={() => doCopy(lessonOut)}>
+                            {copied ? t.copied : t.copy}
+                          </button>
+                        </div>
+                      );
+                    return (
+                      <div className="lesson-doc">
+                        {L.outline.length > 0 && (
+                          <div className="lesson-block">
+                            <div className="block-title">{t.outlineTitle}</div>
+                            {L.outline.map((o, i) => (
+                              <div className="outline-row" key={i}>
+                                {o.label && <span className="outline-label">{o.label}</span>}
+                                <span>{o.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="block-title deck-title">{t.slidesTitle}</div>
+                        <div className="slide-deck">
+                          {L.slides.map((sl, i) => (
+                            <div className="slide-card" key={i}>
+                              <span className="slide-num">
+                                {t.slideWord} {sl.n}
+                              </span>
+                              <div className="slide-title">{sl.title}</div>
+                              <ul className="slide-bullets">
+                                {sl.bullets.map((b, j) => (
+                                  <li key={j}>{b}</li>
+                                ))}
+                              </ul>
+                              {sl.visual && (
+                                <div className="slide-visual">
+                                  <span className="visual-tag">{t.visualLabel}</span>
+                                  <span>{sl.visual}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {L.questions.length > 0 && (
+                          <div className="lesson-block">
+                            <div className="block-title">{t.questionsTitle}</div>
+                            <ol className="question-list">
+                              {L.questions.map((q, i) => (
+                                <li key={i}>{q}</li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
+
+                        <button className="copy-btn" onClick={() => doCopy(lessonOut)}>
+                          {copied ? t.copied : t.copy}
+                        </button>
+                      </div>
+                    );
+                  })()}
               </>
             )}
 
