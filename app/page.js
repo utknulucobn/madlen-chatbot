@@ -572,7 +572,7 @@ export default function App() {
                 </div>
                 <div className="cards">
                   <button className="role-card" onClick={() => setView("teacherPick")}>
-                    <div className="emoji">🍎</div>
+                    <div className="emoji">📚</div>
                     <h3>{t.teacher}</h3>
                     <p>{t.teacherDesc}</p>
                   </button>
