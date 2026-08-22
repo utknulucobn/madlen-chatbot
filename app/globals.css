@@ -391,6 +391,11 @@ body {
   font-size: 13px;
   font-weight: 700;
   color: var(--ink-soft);
+  margin-right: 12px;
+  vertical-align: middle;
+}
+.tool-form label::after {
+  content: ":";
 }
 .tool-form input,
 .tool-form textarea {
