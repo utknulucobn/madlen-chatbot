@@ -27,6 +27,10 @@ const T = {
     newChat: "+ New chat",
     history: "History",
     noHistory: "No conversations yet.",
+    deleteChat: "Delete chat",
+    deleteAsk: "Delete this chat?",
+    deleteYes: "Delete",
+    deleteNo: "Cancel",
     grade: "Grade",
     subject: "Subject",
     gradeNone: "Grade (optional)",
@@ -79,6 +83,10 @@ const T = {
     newChat: "+ Yeni sohbet",
     history: "Geçmiş",
     noHistory: "Henüz sohbet yok.",
+    deleteChat: "Sohbeti sil",
+    deleteAsk: "Bu sohbet silinsin mi?",
+    deleteYes: "Sil",
+    deleteNo: "Vazgeç",
     grade: "Sınıf",
     subject: "Ders",
     gradeNone: "Sınıf (isteğe bağlı)",
@@ -152,6 +160,7 @@ export default function App() {
   const [essayOut, setEssayOut] = useState("");
   const [copied, setCopied] = useState(false);
   const [translating, setTranslating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const endRef = useRef(null);
   const prevLang = useRef(null);
@@ -219,6 +228,13 @@ export default function App() {
       setEssayFresh(item.messages[item.messages.length - 1]?.content || "");
       setView("essay");
     }
+  };
+
+  const removeHistory = (id) => {
+    setHistory((h) => h.filter((x) => x.id !== id));
+    setConfirmDelete(null);
+    // Clear the screen too if the chat being deleted is the one open.
+    if (activeId === id) newChat();
   };
 
   const newChat = () => {
@@ -549,15 +565,38 @@ export default function App() {
         <div className="history-title">{t.history}</div>
         <div className="history">
           {history.length === 0 && <div className="history-empty">{t.noHistory}</div>}
-          {history.map((h) => (
-            <button
-              key={h.id}
-              className={"history-item" + (h.id === activeId ? " active" : "")}
-              onClick={() => openHistory(h)}
-            >
-              {h.title}
-            </button>
-          ))}
+          {history.map((h) =>
+            confirmDelete === h.id ? (
+              <div className="history-confirm" key={h.id}>
+                <span>{t.deleteAsk}</span>
+                <div className="history-confirm-actions">
+                  <button className="confirm-yes" onClick={() => removeHistory(h.id)}>
+                    {t.deleteYes}
+                  </button>
+                  <button className="confirm-no" onClick={() => setConfirmDelete(null)}>
+                    {t.deleteNo}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className={"history-row" + (h.id === activeId ? " active" : "")}
+                key={h.id}
+              >
+                <button className="history-item" onClick={() => openHistory(h)}>
+                  {h.title}
+                </button>
+                <button
+                  className="history-del"
+                  onClick={() => setConfirmDelete(h.id)}
+                  title={t.deleteChat}
+                  aria-label={t.deleteChat}
+                >
+                  ×
+                </button>
+              </div>
+            )
+          )}
         </div>
       </aside>
 
