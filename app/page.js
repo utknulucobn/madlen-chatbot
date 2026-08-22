@@ -53,7 +53,7 @@ const T = {
     visualLabel: "Visual",
     translating: "Translating this output...",
     errGeneric: "Something went wrong. Please try again.",
-    errRate: "The free usage limit was reached for now. Please try again in a minute.",
+    errRate: "This demo runs on Google's free AI tier, which allows a limited number of requests per day — and today's allowance is used up. It resets daily.",
     errKey: "The server API key seems invalid.",
   },
   tr: {
@@ -105,7 +105,7 @@ const T = {
     visualLabel: "Görsel",
     translating: "Bu çıktı çevriliyor...",
     errGeneric: "Bir şeyler ters gitti. Lütfen tekrar dene.",
-    errRate: "Ücretsiz kullanım limiti şimdilik doldu. Bir dakika sonra tekrar dene.",
+    errRate: "Bu demo Google'ın ücretsiz yapay zekâ katmanında çalışıyor; günlük istek hakkı şu an dolu. Limit her gün yenileniyor.",
     errKey: "Sunucudaki API anahtarı geçersiz görünüyor.",
   },
 };
@@ -155,6 +155,11 @@ export default function App() {
 
   const endRef = useRef(null);
   const prevLang = useRef(null);
+  // Translations of the document currently on screen, keyed by language.
+  // Free-tier quota is tight, so a language already produced is never
+  // requested from the model twice.
+  const lessonCache = useRef({});
+  const essayCache = useRef({});
   const t = T[lang];
 
   /* ---- init from localStorage ---- */
@@ -194,11 +199,11 @@ export default function App() {
       setMsgs(item.messages);
       setView("student");
     } else if (item.mode === "lesson") {
-      setLessonOut(item.messages[item.messages.length - 1]?.content || "");
+      setLessonFresh(item.messages[item.messages.length - 1]?.content || "");
       setTopic(item.title);
       setView("lesson");
     } else {
-      setEssayOut(item.messages[item.messages.length - 1]?.content || "");
+      setEssayFresh(item.messages[item.messages.length - 1]?.content || "");
       setView("essay");
     }
   };
@@ -207,8 +212,8 @@ export default function App() {
     setActiveId(null);
     setMsgs([]);
     setInput("");
-    setLessonOut("");
-    setEssayOut("");
+    setLessonFresh("");
+    setEssayFresh("");
     setEssay("");
     setTopic("");
     setErr("");
@@ -243,26 +248,50 @@ export default function App() {
   /* ---- re-translate visible output when the language is switched ----
      Switching TR/EN used to relabel the UI while leaving the generated
      document in the old language. Send it back through the model instead,
-     preserving the structural labels the renderer parses. */
+     preserving the structural labels the renderer parses. Each language is
+     translated at most once per document: the result is cached, so toggling
+     back and forth costs no further requests. */
   useEffect(() => {
     if (prevLang.current === null) {
       prevLang.current = lang;
       return;
     }
-    if (prevLang.current === lang) return;
+    const from = prevLang.current;
+    if (from === lang) return;
     prevLang.current = lang;
     if (!lessonOut && !essayOut) return;
 
     let cancelled = false;
     (async () => {
+      // Remember what is on screen under the language it was written in.
+      if (lessonOut) lessonCache.current[from] = lessonOut;
+      if (essayOut) essayCache.current[from] = essayOut;
+
+      const lessonHit = lessonOut ? lessonCache.current[lang] : null;
+      const essayHit = essayOut ? essayCache.current[lang] : null;
+
+      // Anything already translated is swapped in without touching the API.
+      if (lessonHit) setLessonOut(lessonHit);
+      if (essayHit) setEssayOut(essayHit);
+
+      const needLesson = lessonOut && !lessonHit;
+      const needEssay = essayOut && !essayHit;
+      if (!needLesson && !needEssay) return;
+
       setTranslating(true);
-      if (lessonOut) {
+      if (needLesson) {
         const out = await callApi("translate", [{ role: "user", content: lessonOut }], {});
-        if (!cancelled && out) setLessonOut(out);
+        if (!cancelled && out) {
+          lessonCache.current[lang] = out;
+          setLessonOut(out);
+        }
       }
-      if (essayOut) {
+      if (needEssay) {
         const out = await callApi("translate", [{ role: "user", content: essayOut }], {});
-        if (!cancelled && out) setEssayOut(out);
+        if (!cancelled && out) {
+          essayCache.current[lang] = out;
+          setEssayOut(out);
+        }
       }
       if (!cancelled) setTranslating(false);
     })();
@@ -290,11 +319,11 @@ export default function App() {
   /* ---- lesson generate ---- */
   const makeLesson = async () => {
     if (!topic.trim() || busy) return;
-    setLessonOut("");
+    setLessonFresh("");
     const messages = [{ role: "user", content: `Please create the lesson plan for: ${topic.trim()}` }];
     const reply = await callApi("lesson", messages, { topic: topic.trim(), duration: duration.trim() || undefined });
     if (reply) {
-      setLessonOut(reply);
+      setLessonFresh(reply);
       pushHistory("lesson", topic.trim(), [...messages, { role: "assistant", content: reply }]);
     }
   };
@@ -302,11 +331,11 @@ export default function App() {
   /* ---- essay grade ---- */
   const gradeIt = async () => {
     if (!essay.trim() || busy) return;
-    setEssayOut("");
+    setEssayFresh("");
     const messages = [{ role: "user", content: essay.trim().slice(0, 12000) }];
     const reply = await callApi("essay", messages, {});
     if (reply) {
-      setEssayOut(reply);
+      setEssayFresh(reply);
       const title = (lang === "tr" ? "Kompozisyon: " : "Essay: ") + essay.trim().slice(0, 30);
       pushHistory("essay", title, [...messages, { role: "assistant", content: reply }]);
     }
@@ -317,6 +346,16 @@ export default function App() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     });
+  };
+
+  /* ---- output setters: a new document resets its translation cache ---- */
+  const setLessonFresh = (text) => {
+    lessonCache.current = text ? { [lang]: text } : {};
+    setLessonOut(text);
+  };
+  const setEssayFresh = (text) => {
+    essayCache.current = text ? { [lang]: text } : {};
+    setEssayOut(text);
   };
 
   /* ---- essay score parsing ---- */
@@ -532,7 +571,7 @@ export default function App() {
                   <button
                     className="role-card"
                     onClick={() => {
-                      setLessonOut("");
+                      setLessonFresh("");
                       setActiveId(null);
                       setView("lesson");
                     }}
@@ -544,7 +583,7 @@ export default function App() {
                   <button
                     className="role-card"
                     onClick={() => {
-                      setEssayOut("");
+                      setEssayFresh("");
                       setEssay("");
                       setActiveId(null);
                       setView("essay");
