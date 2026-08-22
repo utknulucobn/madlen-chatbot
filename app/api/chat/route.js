@@ -114,6 +114,21 @@ Plain text only, no markdown symbols.`;
   return `You are a helpful assistant. Reply in ${langName}.`;
 }
 
+// Temporary diagnostic: which models does this API key actually have access to?
+export async function GET() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return Response.json({ error: "no key" }, { status: 500 });
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+    headers: { "x-goog-api-key": apiKey },
+  });
+  const data = await r.json();
+  const models = (data?.models || []).map((m) => ({
+    name: m.name,
+    methods: m.supportedGenerationMethods,
+  }));
+  return Response.json({ count: models.length, models });
+}
+
 export async function POST(req) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
