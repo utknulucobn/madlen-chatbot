@@ -10,6 +10,7 @@ const T = {
     heroSub: "AI mini-tools for the classroom. Who are you?",
     teacher: "Teacher",
     student: "Student",
+    studentTool: "Student Chatbot",
     teacherDesc: "Prepare lessons in minutes and grade essays with structured feedback.",
     studentDesc: "A study buddy that gives you hints, not answers.",
     pickTool: "What would you like to do?",
@@ -65,6 +66,7 @@ const T = {
     heroSub: "Sınıf için yapay zekâ mini araçları. Sen kimsin?",
     teacher: "Öğretmen",
     student: "Öğrenci",
+    studentTool: "Sohbet Asistanı",
     teacherDesc: "Dakikalar içinde ders hazırla, kompozisyonları yapılandırılmış geri bildirimle değerlendir.",
     studentDesc: "Cevabı değil, ipucunu veren bir çalışma arkadaşı.",
     pickTool: "Ne yapmak istersin?",
@@ -164,15 +166,16 @@ export default function App() {
 
   // Where the user currently is, shown in the top bar so the screen is never
   // ambiguous: Teacher > Lesson Prep Assistant, Teacher > Essay Grader, Student.
+  const backToTeacher = () => setView("teacherPick");
   const crumbs =
     view === "student"
-      ? [t.student]
+      ? [{ label: t.student }, { label: t.studentTool }]
       : view === "teacherPick"
-      ? [t.teacher]
+      ? [{ label: t.teacher }]
       : view === "lesson"
-      ? [t.teacher, t.lesson]
+      ? [{ label: t.teacher, go: backToTeacher }, { label: t.lesson }]
       : view === "essay"
-      ? [t.teacher, t.essay]
+      ? [{ label: t.teacher, go: backToTeacher }, { label: t.essay }]
       : [];
 
   /* ---- init from localStorage ---- */
@@ -550,7 +553,15 @@ export default function App() {
               {crumbs.map((c, i) => (
                 <span key={i} className="crumb-item">
                   {i > 0 && <span className="crumb-sep">›</span>}
-                  <span className={i === crumbs.length - 1 ? "crumb-now" : "crumb-up"}>{c}</span>
+                  {c.go ? (
+                    <button className="crumb-link" onClick={c.go}>
+                      {c.label}
+                    </button>
+                  ) : (
+                    <span className={i === crumbs.length - 1 ? "crumb-now" : "crumb-up"}>
+                      {c.label}
+                    </span>
+                  )}
                 </span>
               ))}
             </div>
