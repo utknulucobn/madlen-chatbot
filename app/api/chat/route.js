@@ -28,6 +28,7 @@ const EN_TOPIC = new Set([
   "solar","system","law","universe","temperature","speed","mass","volume","mixture","acid","base",
   "salt","metal","wave","mirror","lens","food","chain","habitat","season","photosynthesis","mitosis",
   "meiosis","diffusion","osmosis","fossil","desert","forest","ocean","river","mountain","island",
+  "mole","compound","ion","bond","isotope","valence","concentration","solubility","density","pressure",
 ]);
 
 const TR_TOPIC = new Set([
@@ -46,6 +47,7 @@ const TR_TOPIC = new Set([
   "fotosentez","sistem","sistemler","yasa","yasalar","evren","sıcaklık","hız","kütle","hacim","karışım",
   "asit","baz","tuz","metal","dalga","dalgalar","ayna","mercek","besin","zincir","yaşam","mevsim",
   "mevsimler","mitoz","mayoz","difüzyon","osmoz","fosil","çöl","orman","okyanus","nehir","dağ","ada",
+  "mol","bileşik","iyon","bağ","izotop","değerlik","çözelti","derişim","çözünürlük","yoğunluk","basınç",
 ]);
 
 function detectLang(text) {
