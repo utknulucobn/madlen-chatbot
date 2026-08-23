@@ -520,6 +520,19 @@ export default function App() {
     }
     closeSlide();
 
+    // Number any outline label that appears more than once, so two learning
+    // objectives read as "Objective 1" and "Objective 2" rather than the same
+    // word twice. Works for any count, not just the two the prompt asks for.
+    const totals = {};
+    for (const row of outline) if (row.label) totals[row.label] = (totals[row.label] || 0) + 1;
+    const seen = {};
+    for (const row of outline) {
+      if (row.label && totals[row.label] > 1) {
+        seen[row.label] = (seen[row.label] || 0) + 1;
+        row.label = `${row.label} ${seen[row.label]}`;
+      }
+    }
+
     // Not the expected shape - let the caller fall back to raw text.
     if (!slides.length) return null;
     return { outline, slides, questions };
