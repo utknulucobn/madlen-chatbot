@@ -51,6 +51,9 @@ const T = {
     copy: "Copy",
     copied: "Copied!",
     scoreLabels: { argument: "Argument", clarity: "Clarity", structure: "Structure", language: "Language" },
+    scoresTitle: "Scores",
+    feedbackTitle: "Teacher feedback",
+    summaryTitle: "Student summary",
     outlineTitle: "Lesson outline",
     slidesTitle: "Slides",
     questionsTitle: "Discussion questions",
@@ -107,6 +110,9 @@ const T = {
     copy: "Kopyala",
     copied: "Kopyalandı!",
     scoreLabels: { argument: "Argüman", clarity: "Açıklık", structure: "Yapı", language: "Dil" },
+    scoresTitle: "Puanlar",
+    feedbackTitle: "Öğretmen geri bildirimi",
+    summaryTitle: "Öğrenciye özet",
     outlineTitle: "Ders taslağı",
     slidesTitle: "Slaytlar",
     questionsTitle: "Tartışma soruları",
@@ -343,6 +349,46 @@ export default function App() {
     return Object.keys(scores).length === 4 ? scores : null;
   };
   const essayBody = (out) => out.replace(/SCORES:[^\n]*\n?/i, "").trim();
+
+  /* ---- essay report parsing ----
+     Splits the report into its two written sections so each can be shown in
+     its own card. Heading-tolerant: the model keeps the English headings even
+     in Turkish output, but may translate them. Returns null on anything
+     unexpected, and the raw text is rendered instead. */
+  const parseEssayReport = (out) => {
+    const body = essayBody(out);
+    if (!body) return null;
+    const isHeading = (line, words) => {
+      const l = line.replace(/[:*_#]/g, "").trim();
+      if (!l || l.length > 60) return false;
+      // Lowercase the Turkish way first: plain toLowerCase leaves "İ" as a
+      // character that never matches "i", so "ÖĞRENCİYE ÖZET" would be missed.
+      const norm = l.replace(/İ/g, "i").replace(/I/g, "ı").toLowerCase();
+      // No word boundary either: Turkish headings take suffixes.
+      return words.some((w) => new RegExp(`^${w}`).test(norm));
+    };
+    const pre = [];
+    const feedback = [];
+    const summary = [];
+    let bucket = pre;
+    for (const line of body.split("\n")) {
+      if (isHeading(line, ["teacher feedback", "ö[ğg]retmen", "og[ğg]retmen"])) {
+        bucket = feedback;
+        continue;
+      }
+      if (isHeading(line, ["student summary", "ö[ğg]renci", "og[ğg]renci"])) {
+        bucket = summary;
+        continue;
+      }
+      bucket.push(line);
+    }
+    if (!feedback.length && !summary.length) return null;
+    return {
+      pre: pre.join("\n").trim(),
+      feedback: feedback.join("\n").trim(),
+      summary: summary.join("\n").trim(),
+    };
+  };
 
   /* ---- lesson plan parsing ----
      Turns the model's plain-text skeleton into an outline, slide cards and
@@ -799,31 +845,62 @@ export default function App() {
                   </button>
                   {err && <div className="error">{err}</div>}
                 </div>
-                {essayOut && (
-                  <div className="result">
-                    {(() => {
-                      const s = parseScores(essayOut);
-                      return s ? (
-                        <div className="scores">
-                          {Object.entries(s).map(([k, v]) => (
-                            <div className="score-row" key={k}>
-                              <div className="score-label">{t.scoreLabels[k]}</div>
-                              <div className="score-track">
-                                <div className="score-fill" style={{ width: `${v * 10}%` }} />
-                              </div>
-                              <div className="score-num">{v}/10</div>
-                            </div>
-                          ))}
+                {essayOut &&
+                  (() => {
+                    const scores = parseScores(essayOut);
+                    const report = parseEssayReport(essayOut);
+                    // Unexpected shape: fall back to the plain text report.
+                    if (!report)
+                      return (
+                        <div className="result">
+                          {essayBody(essayOut)}
+                          {"\n"}
+                          <button className="copy-btn" onClick={() => doCopy(essayBody(essayOut))}>
+                            {copied ? t.copied : t.copy}
+                          </button>
                         </div>
-                      ) : null;
-                    })()}
-                    {essayBody(essayOut)}
-                    {"\n"}
-                    <button className="copy-btn" onClick={() => doCopy(essayBody(essayOut))}>
-                      {copied ? t.copied : t.copy}
-                    </button>
-                  </div>
-                )}
+                      );
+                    return (
+                      <div className="lesson-doc">
+                        {scores && (
+                          <div className="lesson-block">
+                            <div className="block-title">{t.scoresTitle}</div>
+                            <div className="scores">
+                              {Object.entries(scores).map(([k, v]) => (
+                                <div className="score-row" key={k}>
+                                  <div className="score-label">{t.scoreLabels[k]}</div>
+                                  <div className="score-track">
+                                    <div className="score-fill" style={{ width: `${v * 10}%` }} />
+                                  </div>
+                                  <div className="score-num">{v}/10</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {report.pre && <div className="lesson-block report-text">{report.pre}</div>}
+
+                        {report.feedback && (
+                          <div className="lesson-block">
+                            <div className="block-title">{t.feedbackTitle}</div>
+                            <div className="report-text">{report.feedback}</div>
+                          </div>
+                        )}
+
+                        {report.summary && (
+                          <div className="lesson-block">
+                            <div className="block-title">{t.summaryTitle}</div>
+                            <div className="report-text">{report.summary}</div>
+                          </div>
+                        )}
+
+                        <button className="copy-btn" onClick={() => doCopy(essayBody(essayOut))}>
+                          {copied ? t.copied : t.copy}
+                        </button>
+                      </div>
+                    );
+                  })()}
               </>
             )}
           </div>
