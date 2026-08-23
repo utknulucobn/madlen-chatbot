@@ -55,11 +55,16 @@ function detectLang(text) {
 function systemPrompt(mode, lang, grade, subject, meta, detected) {
   const langName = lang === "tr" ? "Turkish" : "English";
   // When detection is certain this overrides everything the prompts say about language.
-  const forced = `${
-    detected
-      ? `\n\nOVERRIDING LANGUAGE INSTRUCTION: the text you have been given is written in ${detected}. Write your ENTIRE response in ${detected}, whatever any rule below suggests. These instructions are in English only because they are instructions - they say nothing about the language of your answer.`
-      : ""
-  }\n\nTURKISH SPELLING: whenever you write Turkish, spell it with the real Turkish letters - ç, ğ, ı, İ, ö, ş, ü. Never substitute the ASCII look-alikes: write "Giriş", "Kapanış", "Üslü sayılar", "Osmanlı", "açıklama", "öğrenci" - never "Giris", "Kapanis", "Uslu sayilar", "Osmanli", "aciklama", "ogrenci". This applies to every word, including headings, slide titles and labels inside drawings.\n`;
+  const forcedLine = detected
+    ? `\n\nOVERRIDING LANGUAGE INSTRUCTION: the text you have been given is written in ${detected}. Write your ENTIRE response in ${detected}, whatever any rule below suggests. These instructions are in English only because they are instructions - they say nothing about the language of your answer. Every part of your answer must be in ${detected}: headings, titles, bullet points, suggestions, labels inside drawings and questions alike. Never switch language halfway through.`
+    : "";
+  // Only sent when the answer may actually be Turkish. Its Turkish examples
+  // used to pull English answers into Turkish halfway through.
+  const spellingLine =
+    detected === "English"
+      ? ""
+      : `\n\nTURKISH SPELLING: whenever you write Turkish, spell it with the real Turkish letters - ç, ğ, ı, İ, ö, ş, ü. Never substitute the ASCII look-alikes: write "Giriş", "Kapanış", "Üslü sayılar", "Osmanlı", "açıklama", "öğrenci" - never "Giris", "Kapanis", "Uslu sayilar", "Osmanli", "aciklama", "ogrenci". This applies to every word, including headings, slide titles and labels inside drawings.`;
+  const forced = `${forcedLine}${spellingLine}\n`;
   const ctx = [
     grade ? `The class/grade level is: Grade ${grade}.` : "",
     subject ? `The subject is: ${subject}.` : "",
