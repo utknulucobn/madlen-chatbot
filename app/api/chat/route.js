@@ -55,9 +55,11 @@ function detectLang(text) {
 function systemPrompt(mode, lang, grade, subject, meta, detected) {
   const langName = lang === "tr" ? "Turkish" : "English";
   // When detection is certain this overrides everything the prompts say about language.
-  const forced = detected
-    ? `\n\nOVERRIDING LANGUAGE INSTRUCTION: the text you have been given is written in ${detected}. Write your ENTIRE response in ${detected}, whatever any rule below suggests. These instructions are in English only because they are instructions - they say nothing about the language of your answer.\n`
-    : "";
+  const forced = `${
+    detected
+      ? `\n\nOVERRIDING LANGUAGE INSTRUCTION: the text you have been given is written in ${detected}. Write your ENTIRE response in ${detected}, whatever any rule below suggests. These instructions are in English only because they are instructions - they say nothing about the language of your answer.`
+      : ""
+  }\n\nTURKISH SPELLING: whenever you write Turkish, spell it with the real Turkish letters - ç, ğ, ı, İ, ö, ş, ü. Never substitute the ASCII look-alikes: write "Giriş", "Kapanış", "Üslü sayılar", "Osmanlı", "açıklama", "öğrenci" - never "Giris", "Kapanis", "Uslu sayilar", "Osmanli", "aciklama", "ogrenci". This applies to every word, including headings, slide titles and labels inside drawings.\n`;
   const ctx = [
     grade ? `The class/grade level is: Grade ${grade}.` : "",
     subject ? `The subject is: ${subject}.` : "",
@@ -103,7 +105,7 @@ ${ctx}`;
 
 LANGUAGE RULE - settle this before writing anything. Look at the topic the teacher typed: "${topic}".
 Decide which language that phrase itself belongs to, and write the ENTIRE plan in that language.
-- Turkish topic ("Fotosentez", "Uslu sayilar", "Osmanli Devleti") -> the whole plan in Turkish.
+- Turkish topic ("Fotosentez", "Üslü sayılar", "Osmanlı Devleti") -> the whole plan in Turkish.
 - English topic ("Photosynthesis", "Quadratic equations", "The Cold War") -> the whole plan in English.
 - ONE WORD IS ENOUGH to decide. Never treat a single-word topic as unclear: "Photosynthesis" is English
   and "Fotosentez" is Turkish, and each gets a plan in its own language.
@@ -125,7 +127,7 @@ LESSON OUTLINE
 Objective: [first learning objective]
 Objective: [second learning objective]
 Key concepts: [comma separated list]
-Flow: Opening ([X] min) - [what happens]. Main activity ([X] min) - [what happens]. Closing ([X] min) - [what happens]. (minutes must add up to the lesson duration; write the stage names and the time unit in the same language as the rest of the plan, e.g. in Turkish: "Giris (5 dk)", "Ana etkinlik (25 dk)", "Kapanis (10 dk)")
+Flow: Opening ([X] min) - [what happens]. Main activity ([X] min) - [what happens]. Closing ([X] min) - [what happens]. (minutes must add up to the lesson duration; write the stage names and the time unit in the same language as the rest of the plan, e.g. in Turkish: "Giriş (5 dk)", "Ana etkinlik (25 dk)", "Kapanış (10 dk)")
 
 SLIDES
 Slide 1: [title]
