@@ -11,12 +11,12 @@ const EN_WORDS = new Set(["the","and","of","to","in","is","that","it","for","wit
 function detectLang(text) {
   const t = String(text || "").trim();
   if (t.length < 2) return null;
-  // Letters unique to Turkish are a strong signal, but one of them inside a
-  // long English text (a name like "Türkiye") must not decide it on its own.
-  const trChars = (t.match(/[çğıöşüÇĞİÖŞÜ]/g) || []).length;
-  if (trChars >= 3 || (trChars > 0 && t.length <= 60)) return "Turkish";
   const words = t.toLowerCase().match(/[a-zçğıöşü']+/g) || [];
-  if (!words.length) return null;
+  const trChars = (t.match(/[çğıöşüÇĞİÖŞÜ]/g) || []).length;
+
+  // Function words are the most reliable signal in anything longer than a
+  // phrase, so they are weighed first: a few Turkish proper nouns inside an
+  // English essay must not outvote a text full of "the", "and", "of".
   let tr = 0;
   let en = 0;
   for (const w of words) {
@@ -25,6 +25,11 @@ function detectLang(text) {
   }
   if (tr > en) return "Turkish";
   if (en > tr) return "English";
+
+  // Only when the word counts tie: letters unique to Turkish. One of them is
+  // enough in short input, but a long text needs several.
+  if (trChars >= 3 || (trChars > 0 && t.length <= 60)) return "Turkish";
+  if (!words.length) return null;
   // A short all-caps or mixed-case token is an abbreviation or a symbol
   // (DNA, ATP, pH) - it belongs to no language, so leave it undecided.
   if (words.length === 1 && t.length <= 4 && /[A-Z]/.test(t)) return null;
