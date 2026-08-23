@@ -23,6 +23,25 @@ function detectLang(text) {
   }
   if (tr > en) return "Turkish";
   if (en > tr) return "English";
+  // A short all-caps or mixed-case token is an abbreviation or a symbol
+  // (DNA, ATP, pH) - it belongs to no language, so leave it undecided.
+  if (words.length === 1 && t.length <= 4 && /[A-Z]/.test(t)) return null;
+
+  // Single words carry no function-word signal, so fall back to spelling.
+  // These letters, clusters and endings do not occur in native Turkish words,
+  // so "Photosynthesis", "Quadratic" or "Gravity" are decisively English.
+  // (w is deliberately left out: it shows up in names like Newton.)
+  if (/[qx]/i.test(t)) return "English";
+  if (/(ph|th|wh|ck|gh|qu|sh|ch|oo|ee|ou|ough)/i.test(t)) return "English";
+  if (/(ity|ies|ment|ness|tion|sion|ology|ism|ing|ance|ence|ious|ful|less)s?\b/i.test(t))
+    return "English";
+
+  // Turkish derivational endings, checked last so English words that happen
+  // to end in -lar/-ler (solar, popular) are already settled above. Only on
+  // longer words, where the ending is a real suffix rather than a coincidence.
+  if (words.some((w) => w.length >= 7 && /(lar|ler|lık|lik|luk|lük|sal|sel|leri|ları|dır|dir)$/i.test(w)))
+    return "Turkish";
+
   return null;
 }
 
