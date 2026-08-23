@@ -486,6 +486,9 @@ body {
   min-height: 170px;
   resize: vertical;
 }
+.tool-form .num-input {
+  max-width: 96px;
+}
 .row {
   display: flex;
   gap: 10px;

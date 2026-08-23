@@ -90,7 +90,8 @@ ${ctx}`;
 
   if (mode === "lesson") {
     const topic = meta?.topic || "(topic not given)";
-    const duration = meta?.duration || "40 minutes";
+    // The field now holds a bare number; the unit lives in the label.
+    const duration = `${String(meta?.duration || "40").replace(/\D/g, "") || "40"} minutes`;
     return `${forced}You are the Madlen Chatbot Lesson Prep Assistant for teachers.
 
 LANGUAGE RULE - settle this before writing anything. Look at the topic the teacher typed: "${topic}".

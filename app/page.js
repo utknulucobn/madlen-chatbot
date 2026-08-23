@@ -41,8 +41,8 @@ const T = {
     subjects: ["Math", "Physics", "Chemistry", "Biology", "Science", "Turkish", "Literature", "English", "History", "Geography", "Other"],
     topic: "Topic",
     topicPh: "e.g. Photosynthesis",
-    duration: "Lesson duration",
-    durationPh: "e.g. 40 minutes",
+    duration: "Lesson duration (min)",
+    durationPh: "40",
     generatePlan: "Create lesson plan",
     essayLabel: "Student essay",
     essayPh: "Paste the essay here...",
@@ -96,8 +96,8 @@ const T = {
     subjects: ["Matematik", "Fizik", "Kimya", "Biyoloji", "Fen Bilimleri", "Türkçe", "Edebiyat", "İngilizce", "Tarih", "Coğrafya", "Diğer"],
     topic: "Konu",
     topicPh: "örn. Fotosentez",
-    duration: "Ders süresi",
-    durationPh: "örn. 40 dakika",
+    duration: "Ders süresi (dk)",
+    durationPh: "40",
     generatePlan: "Ders planı oluştur",
     essayLabel: "Öğrenci kompozisyonu",
     essayPh: "Kompozisyonu buraya yapıştır...",
@@ -682,7 +682,13 @@ export default function App() {
                     </div>
                     <div>
                       <label>{t.duration}</label>
-                      <input value={duration} onChange={(e) => setDuration(e.target.value)} placeholder={t.durationPh} maxLength={40} />
+                      <input
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                        placeholder={t.durationPh}
+                        inputMode="numeric"
+                        className="num-input"
+                      />
                     </div>
                   </div>
                   <ContextBar />
