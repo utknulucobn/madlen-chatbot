@@ -554,7 +554,7 @@ export default function App() {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="brand" onClick={newChat} title={t.appName}>
-          <span className="shell">🐚</span> {t.appName}
+          <img className="brand-mark" src="/madlen.png" alt="" /> {t.appName}
         </div>
         <button className="new-chat" onClick={newChat}>
           {t.newChat}

@@ -60,8 +60,11 @@ body {
 .brand:hover {
   background: #ece1cd;
 }
-.brand .shell {
-  font-size: 22px;
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .new-chat {
