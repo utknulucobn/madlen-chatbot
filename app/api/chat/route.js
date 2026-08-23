@@ -2,8 +2,36 @@ export const maxDuration = 60;
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-function systemPrompt(mode, lang, grade, subject, meta) {
+// Decide the language of the text the answer must follow. The model kept
+// drifting to the language of its own (English) instructions, so when the
+// signal is unambiguous we tell it outright instead of asking it to judge.
+const TR_WORDS = new Set(["ve","bir","bu","için","ile","olarak","daha","çok","gibi","ama","de","da","ne","her","en","ki","olan","olduğu","kadar","sonra","değil","şey","olduğunu","ancak","ise","hem","böyle","yani"]);
+const EN_WORDS = new Set(["the","and","of","to","in","is","that","it","for","with","as","was","on","are","this","be","have","not","but","they","from","which","their","there","would"]);
+
+function detectLang(text) {
+  const t = String(text || "").trim();
+  if (t.length < 2) return null;
+  // Letters unique to Turkish settle it on their own.
+  if (/[çğıöşüÇĞİıÖŞÜ]/.test(t)) return "Turkish";
+  const words = t.toLowerCase().match(/[a-zçğıöşü']+/g) || [];
+  if (!words.length) return null;
+  let tr = 0;
+  let en = 0;
+  for (const w of words) {
+    if (TR_WORDS.has(w)) tr++;
+    if (EN_WORDS.has(w)) en++;
+  }
+  if (tr > en) return "Turkish";
+  if (en > tr) return "English";
+  return null;
+}
+
+function systemPrompt(mode, lang, grade, subject, meta, detected) {
   const langName = lang === "tr" ? "Turkish" : "English";
+  // When detection is certain this overrides everything the prompts say about language.
+  const forced = detected
+    ? `\n\nOVERRIDING LANGUAGE INSTRUCTION: the text you have been given is written in ${detected}. Write your ENTIRE response in ${detected}, whatever any rule below suggests. These instructions are in English only because they are instructions - they say nothing about the language of your answer.\n`
+    : "";
   const ctx = [
     grade ? `The class/grade level is: Grade ${grade}.` : "",
     subject ? `The subject is: ${subject}.` : "",
@@ -13,7 +41,7 @@ function systemPrompt(mode, lang, grade, subject, meta) {
 
   if (mode === "student") {
     const level = meta?.level ? `The student described their level as: ${meta.level}.` : "";
-    return `You are the Madlen Chatbot study assistant for a school student.
+    return `${forced}You are the Madlen Chatbot study assistant for a school student.
 
 LANGUAGE RULE: Answer every message in the language of THAT message. Look only at the student's most
 recent message and match it - ignore what language earlier messages in this conversation were in. If the
@@ -44,7 +72,7 @@ ${ctx}`;
   if (mode === "lesson") {
     const topic = meta?.topic || "(topic not given)";
     const duration = meta?.duration || "40 minutes";
-    return `You are the Madlen Chatbot Lesson Prep Assistant for teachers.
+    return `${forced}You are the Madlen Chatbot Lesson Prep Assistant for teachers.
 
 LANGUAGE RULE - settle this before writing anything. Look at the topic the teacher typed: "${topic}".
 Decide which language that phrase itself belongs to, and write the ENTIRE plan in that language.
@@ -134,7 +162,7 @@ Keep everything practical and directly usable in a real classroom.`;
   }
 
   if (mode === "essay") {
-    return `You are the Madlen Chatbot Essay Grader for teachers.
+    return `${forced}You are the Madlen Chatbot Essay Grader for teachers.
 
 LANGUAGE RULE: Write the entire evaluation in the language the student's essay is written in, when that
 language is Turkish or English. If the essay is in another language, or its language is unclear, write
@@ -190,6 +218,12 @@ export async function POST(req) {
       parts: [{ text: String(m.content || "").slice(0, 12000) }],
     }));
 
+    // Which text decides the answer's language: the topic for a lesson plan
+    // (the request wrapper around it is always English), otherwise whatever
+    // the user last sent - their question, or the essay being graded.
+    const lastUserText = [...messages].reverse().find((m) => m.role === "user")?.content || "";
+    const detected = detectLang(mode === "lesson" ? meta?.topic || "" : lastUserText);
+
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
     const r = await fetch(url, {
@@ -197,7 +231,7 @@ export async function POST(req) {
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: systemPrompt(mode, lang, grade, subject, meta) }],
+          parts: [{ text: systemPrompt(mode, lang, grade, subject, meta, detected) }],
         },
         contents,
         generationConfig: {
