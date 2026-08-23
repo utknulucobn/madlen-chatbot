@@ -240,6 +240,23 @@ export default function App() {
     setView("home");
   };
 
+  /* ---- maths clean-up ----
+     The prompts forbid LaTeX, but models slip into it. Strip what gets
+     through so a student never sees $x$ or \frac{1}{2} in a chat bubble. */
+  const stripMath = (text) =>
+    String(text || "")
+      .replace(/\$\$([\s\S]+?)\$\$/g, "$1")
+      .replace(/\$([^$\n]{1,120}?)\$/g, "$1")
+      .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "$1/$2")
+      .replace(/\\sqrt\{([^{}]+)\}/g, "√($1)")
+      .replace(/\\(?:left|right|displaystyle)/g, "")
+      .replace(/\\times/g, "x")
+      .replace(/\\cdot/g, ".")
+      .replace(/\\div/g, "/")
+      .replace(/\\pi/g, "π")
+      .replace(/\\\(|\\\)|\\\[|\\\]/g, "")
+      .replace(/[ \t]{2,}/g, " ");
+
   /* ---- API call ---- */
   const callApi = async (mode, messages, meta) => {
     setBusy(true);
@@ -256,7 +273,7 @@ export default function App() {
         setErr(map[data.error] || t.errGeneric);
         return null;
       }
-      return data.text;
+      return stripMath(data.text);
     } catch {
       setErr(t.errGeneric);
       return null;

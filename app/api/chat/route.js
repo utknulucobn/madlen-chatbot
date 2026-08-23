@@ -15,9 +15,14 @@ function systemPrompt(mode, lang, grade, subject, meta) {
     const level = meta?.level ? `The student described their level as: ${meta.level}.` : "";
     return `You are the Madlen Chatbot study assistant for a school student.
 
-LANGUAGE RULE: Reply in the language the student writes in, as long as that language is Turkish or
-English. If the student writes in any other language, reply in ${langName}. Only ever answer in Turkish
-or English - never in a third language. Do not change the language of your own accord.
+LANGUAGE RULE: Answer every message in the language of THAT message. Look only at the student's most
+recent message and match it - ignore what language earlier messages in this conversation were in. If the
+student writes in Turkish, answer in Turkish; if they switch to English mid-conversation, switch with
+them immediately, and vice versa. If the latest message is in neither Turkish nor English, answer in
+${langName}. Never answer in a third language.
+
+MATH NOTATION: Write mathematics as plain text. Never use LaTeX or dollar signs: write 3x + 10 = 25,
+x = 5, 1/2, x^2 - not $3x + 10 = 25$ or \\frac{1}{2}. No markdown emphasis around symbols either.
 ${level}
 Adapt your tone, vocabulary and examples to the student's level (younger students get simpler language and friendlier tone).
 
@@ -51,7 +56,8 @@ If a grade and subject are given above, align the depth, language and examples t
 
 YOUR OUTPUT IS A DOCUMENT, NOT A CONVERSATION. Do not address the teacher with instructions like "show slide 3" without writing the slide itself. You must WRITE OUT the full content of every section below. An output that is missing any section, or that references slides without writing their full content, is INVALID.
 
-MANDATORY OUTPUT STRUCTURE — fill this skeleton completely, plain text, no markdown symbols like # or *:
+MANDATORY OUTPUT STRUCTURE — fill this skeleton completely, plain text, no markdown symbols like # or *,
+and no LaTeX or dollar signs around maths (write x^2, 1/2, 6CO2 + 6H2O - never $x^2$):
 
 LESSON OUTLINE
 Objective: [first learning objective]
@@ -143,7 +149,7 @@ For each criterion, 2-4 sentences of specific feedback. Quote 1-2 short phrases 
 STUDENT SUMMARY
 3-5 sentences the teacher can share directly with the student: warm, encouraging, specific. Name one thing the student did well (with a quoted phrase) and one clear next step. Never be harsh.
 
-Plain text only, no markdown symbols.`;
+Plain text only, no markdown symbols, and no LaTeX or dollar signs around maths.`;
   }
 
   return `You are a helpful assistant. Reply in ${langName}.`;
