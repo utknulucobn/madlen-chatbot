@@ -22,6 +22,9 @@ const T = {
     welcomeStudentSub: "Ask me anything about your lessons. I'll guide you with hints so the \"aha!\" moment is yours.",
     welcomeLessonSub: "Tell me your topic and I'll build the lesson with you.",
     welcomeEssaySub: "Paste a student essay below and I'll grade it with structured feedback.",
+    langNoteStudent: "Ask in Turkish or English — you'll get the answer in the same language.",
+    langNoteLesson: "Write the topic in Turkish or English — the plan follows that language.",
+    langNoteEssay: "The report follows the essay's language — Turkish or English.",
     inputPlaceholder: "Write your question...",
     send: "Send",
     thinking: "Thinking...",
@@ -81,6 +84,9 @@ const T = {
     welcomeStudentSub: "Derslerinle ilgili her şeyi sorabilirsin. Sana ipuçlarıyla yol göstereceğim; \"buldum!\" anı senin olacak.",
     welcomeLessonSub: "Konunu söyle, dersi birlikte kuralım.",
     welcomeEssaySub: "Aşağıya bir öğrenci kompozisyonu yapıştır, yapılandırılmış geri bildirimle değerlendireyim.",
+    langNoteStudent: "Türkçe veya İngilizce sor — cevabı aynı dilde alırsın.",
+    langNoteLesson: "Konuyu Türkçe veya İngilizce yaz — plan aynı dilde hazırlanır.",
+    langNoteEssay: "Değerlendirme, kompozisyonun dilinde olur — Türkçe veya İngilizce.",
     inputPlaceholder: "Sorunu yaz...",
     send: "Gönder",
     thinking: "Düşünüyor...",
@@ -696,6 +702,10 @@ export default function App() {
                   <>
                     <div className="welcome">{t.welcome}</div>
                     <div className="welcome-sub">{t.welcomeStudentSub}</div>
+                    <div className="lang-note">
+                      <span className="lang-note-icon">🌐</span>
+                      {t.langNoteStudent}
+                    </div>
                     <div className="cards" style={{ marginTop: 8 }}>
                       <select
                         className="history-item"
@@ -731,6 +741,10 @@ export default function App() {
               <>
                 <div className="welcome">{t.welcome}</div>
                 <div className="welcome-sub">{t.welcomeLessonSub}</div>
+                <div className="lang-note">
+                  <span className="lang-note-icon">🌐</span>
+                  {t.langNoteLesson}
+                </div>
                 <div className="tool-form">
                   <div className="row">
                     <div>
@@ -836,6 +850,10 @@ export default function App() {
               <>
                 <div className="welcome">{t.welcome}</div>
                 <div className="welcome-sub">{t.welcomeEssaySub}</div>
+                <div className="lang-note">
+                  <span className="lang-note-icon">🌐</span>
+                  {t.langNoteEssay}
+                </div>
                 <div className="tool-form">
                   <label>{t.essayLabel}</label>
                   <textarea value={essay} onChange={(e) => setEssay(e.target.value)} placeholder={t.essayPh} maxLength={12000} />
