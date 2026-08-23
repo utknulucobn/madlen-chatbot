@@ -11,8 +11,10 @@ const EN_WORDS = new Set(["the","and","of","to","in","is","that","it","for","wit
 function detectLang(text) {
   const t = String(text || "").trim();
   if (t.length < 2) return null;
-  // Letters unique to Turkish settle it on their own.
-  if (/[çğıöşüÇĞİıÖŞÜ]/.test(t)) return "Turkish";
+  // Letters unique to Turkish are a strong signal, but one of them inside a
+  // long English text (a name like "Türkiye") must not decide it on its own.
+  const trChars = (t.match(/[çğıöşüÇĞİÖŞÜ]/g) || []).length;
+  if (trChars >= 3 || (trChars > 0 && t.length <= 60)) return "Turkish";
   const words = t.toLowerCase().match(/[a-zçğıöşü']+/g) || [];
   if (!words.length) return null;
   let tr = 0;
@@ -297,6 +299,7 @@ export async function POST(req) {
     // Harmless extra fields; the client only reads `text`.
     return Response.json({
       text,
+      detectedLanguage: detected || "undecided",
       finishReason: data?.candidates?.[0]?.finishReason,
       usage: data?.usageMetadata,
     });
