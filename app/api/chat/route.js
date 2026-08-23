@@ -199,6 +199,10 @@ Line 1 must be exactly: SCORES: argument=X; clarity=X; structure=X; language=X
 
 Then, after a blank line:
 TEACHER FEEDBACK
+Name each criterion in the language you are writing in - in Turkish write Argüman, Açıklık, Yapı, Dil;
+in English write Argument, Clarity, Structure, Language. Only the SCORES line above keeps the English
+keys, because it is machine-read. The two section headings TEACHER FEEDBACK and STUDENT SUMMARY also
+stay exactly as written here.
 For each criterion, 2-4 sentences of specific feedback. Quote 1-2 short phrases from the essay itself as evidence (in quotation marks). Be concrete about what to improve.
 
 STUDENT SUMMARY
