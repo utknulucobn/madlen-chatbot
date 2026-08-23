@@ -13,7 +13,11 @@ function systemPrompt(mode, lang, grade, subject, meta) {
 
   if (mode === "student") {
     const level = meta?.level ? `The student described their level as: ${meta.level}.` : "";
-    return `You are the Madlen Chatbot study assistant for a school student. Default to ${langName}, but always reply in the language the student writes in.
+    return `You are the Madlen Chatbot study assistant for a school student.
+
+LANGUAGE RULE: Reply in the language the student writes in, as long as that language is Turkish or
+English. If the student writes in any other language, reply in ${langName}. Only ever answer in Turkish
+or English - never in a third language. Do not change the language of your own accord.
 ${level}
 Adapt your tone, vocabulary and examples to the student's level (younger students get simpler language and friendlier tone).
 
@@ -35,7 +39,12 @@ ${ctx}`;
   if (mode === "lesson") {
     const topic = meta?.topic || "(topic not given)";
     const duration = meta?.duration || "40 minutes";
-    return `You are the Madlen Chatbot Lesson Prep Assistant for teachers. Reply in ${langName} only.
+    return `You are the Madlen Chatbot Lesson Prep Assistant for teachers.
+
+LANGUAGE RULE: Write the entire plan in the language of the topic the teacher typed, when that language
+is clearly Turkish or English. If the topic is too short to tell, ambiguous, a proper noun, a formula or
+an international term (for example "DNA", "Newton", "ATP"), write the plan in ${langName} instead.
+Only ever write in Turkish or English, and never mix the two within one plan.
 ${ctx}
 The teacher wants a ready-to-teach plan for the topic: "${topic}", lesson duration: ${duration}.
 If a grade and subject are given above, align the depth, language and examples to that grade and subject. If not, target a reasonable middle level and say which level you assumed in one short note at the top.
@@ -48,7 +57,7 @@ LESSON OUTLINE
 Objective: [first learning objective]
 Objective: [second learning objective]
 Key concepts: [comma separated list]
-Flow: Opening ([X] min) - [what happens]. Main activity ([X] min) - [what happens]. Closing ([X] min) - [what happens]. (minutes must add up to the lesson duration; write the stage names and the time unit in ${langName}, e.g. in Turkish: "Giris (5 dk)", "Ana etkinlik (25 dk)", "Kapanis (10 dk)")
+Flow: Opening ([X] min) - [what happens]. Main activity ([X] min) - [what happens]. Closing ([X] min) - [what happens]. (minutes must add up to the lesson duration; write the stage names and the time unit in the same language as the rest of the plan, e.g. in Turkish: "Giris (5 dk)", "Ana etkinlik (25 dk)", "Kapanis (10 dk)")
 
 SLIDES
 Slide 1: [title]
@@ -104,7 +113,7 @@ SVG RULES (the Visual SVG line is drawn on the slide, so it must be valid and se
   attribute, and never add event attributes such as onclick.
 - Palette: strokes and accents #e8842c, dark ink #3e3226, soft fill #f7d9bd, background left transparent.
   Use stroke-width 2, rounded shapes where natural.
-- Label text must be in ${langName}.
+- Label text must be in the same language as the rest of the plan.
 - If the topic genuinely cannot be diagrammed, still draw a simple symbolic schematic rather than
   skipping the line.
 
@@ -112,7 +121,11 @@ Keep everything practical and directly usable in a real classroom.`;
   }
 
   if (mode === "essay") {
-    return `You are the Madlen Chatbot Essay Grader for teachers. Reply in ${langName} only.
+    return `You are the Madlen Chatbot Essay Grader for teachers.
+
+LANGUAGE RULE: Write the entire evaluation in the language the student's essay is written in, when that
+language is Turkish or English. If the essay is in another language, or its language is unclear, write
+the evaluation in ${langName}. Only ever write in Turkish or English.
 ${ctx}
 If a grade level is given above, calibrate your expectations to that grade: the same essay should be scored more generously for younger students and more strictly for older ones. If no grade is given, assume high school and say so in one short note.
 
@@ -131,26 +144,6 @@ STUDENT SUMMARY
 3-5 sentences the teacher can share directly with the student: warm, encouraging, specific. Name one thing the student did well (with a quoted phrase) and one clear next step. Never be harsh.
 
 Plain text only, no markdown symbols.`;
-  }
-
-  if (mode === "translate") {
-    return `You are a machine translation function, not an assistant. Translate the document into ${langName}.
-
-ABSOLUTE RULES:
-- Output ONLY the translated document. No preface, no closing remark, no explanation.
-- Do not summarise, expand, reorder, merge or improve anything. Translate what is there, nothing more.
-- Produce exactly the same number of lines, in the same order, with the same bullet and numbering characters.
-- Never introduce markdown: no #, no **, no ---, no tables.
-- Keep these structural labels in English, character for character:
-  LESSON OUTLINE / Objective: / Key concepts: / Flow: / SLIDES / Slide 1: ... Slide 5: /
-  Visual suggestion: / DISCUSSION QUESTIONS / SCORES: / TEACHER FEEDBACK / STUDENT SUMMARY
-- Translate everything after those labels, including the stage names inside the Flow line
-  (Opening / Main activity / Closing) and the time unit (min / dk).
-- Leave the numbers on the SCORES line untouched.
-- On a "Visual SVG:" line, reproduce the markup exactly as it is. Translate ONLY the words that sit
-  between <text> and </text> (or <tspan> and </tspan>). Change nothing else: no attributes, no numbers,
-  no element names.
-- If the document is already in ${langName}, output it unchanged.`;
   }
 
   return `You are a helpful assistant. Reply in ${langName}.`;
@@ -184,41 +177,6 @@ export async function POST(req) {
       parts: [{ text: String(m.content || "").slice(0, 12000) }],
     }));
 
-    // The translator drifts into rewriting the document unless it is shown
-    // exactly what a faithful, structure-preserving translation looks like.
-    if (mode === "translate") {
-      const shotIn = [
-        "LESSON OUTLINE",
-        "Objective: Bitkilerin nasil beslendigini aciklar.",
-        "Flow: Opening (5 dk) - Merak uyandirici soru sorulur.",
-        "",
-        "SLIDES",
-        "Slide 1: Fotosentez Nedir?",
-        "- Bitkiler kendi besinini uretir.",
-        "Visual suggestion: Yesil bir yaprak cizimi.",
-        "",
-        "DISCUSSION QUESTIONS",
-        "1. Bitkiler neden yesildir?",
-      ].join("\n");
-      const shotOut = [
-        "LESSON OUTLINE",
-        "Objective: Explains how plants feed themselves.",
-        "Flow: Opening (5 min) - A curiosity-sparking question is asked.",
-        "",
-        "SLIDES",
-        "Slide 1: What is Photosynthesis?",
-        "- Plants produce their own food.",
-        "Visual suggestion: A drawing of a green leaf.",
-        "",
-        "DISCUSSION QUESTIONS",
-        "1. Why are plants green?",
-      ].join("\n");
-      contents.unshift(
-        { role: "user", parts: [{ text: shotIn }] },
-        { role: "model", parts: [{ text: shotOut }] }
-      );
-    }
-
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
     const r = await fetch(url, {
@@ -230,11 +188,11 @@ export async function POST(req) {
         },
         contents,
         generationConfig: {
-          temperature: mode === "essay" ? 0.4 : mode === "translate" ? 0.2 : 0.7,
+          temperature: mode === "essay" ? 0.4 : 0.7,
           // Lesson plans must fit the full skeleton (5 slides + discussion
           // questions). Turkish output is token-heavier than English and was
           // getting cut off mid-slide at 2048.
-          maxOutputTokens: mode === "lesson" || mode === "translate" ? 8192 : 2048,
+          maxOutputTokens: mode === "lesson" ? 8192 : 2048,
         },
       }),
     });

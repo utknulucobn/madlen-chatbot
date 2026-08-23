@@ -55,7 +55,6 @@ const T = {
     questionsTitle: "Discussion questions",
     slideWord: "Slide",
     visualLabel: "Visual",
-    translating: "Translating this output...",
     errGeneric: "Something went wrong. Please try again.",
     errRate: "This demo runs on Google's free AI tier, which allows a limited number of requests per day — and today's allowance is used up. It resets daily.",
     errKey: "The server API key seems invalid.",
@@ -111,7 +110,6 @@ const T = {
     questionsTitle: "Tartışma soruları",
     slideWord: "Slayt",
     visualLabel: "Görsel",
-    translating: "Bu çıktı çevriliyor...",
     errGeneric: "Bir şeyler ters gitti. Lütfen tekrar dene.",
     errRate: "Bu demo Google'ın ücretsiz yapay zekâ katmanında çalışıyor; günlük istek hakkı şu an dolu. Limit her gün yenileniyor.",
     errKey: "Sunucudaki API anahtarı geçersiz görünüyor.",
@@ -159,16 +157,9 @@ export default function App() {
   const [essay, setEssay] = useState("");
   const [essayOut, setEssayOut] = useState("");
   const [copied, setCopied] = useState(false);
-  const [translating, setTranslating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const endRef = useRef(null);
-  const prevLang = useRef(null);
-  // Translations of the document currently on screen, keyed by language.
-  // Free-tier quota is tight, so a language already produced is never
-  // requested from the model twice.
-  const lessonCache = useRef({});
-  const essayCache = useRef({});
   const t = T[lang];
 
   // Where the user currently is, shown in the top bar so the screen is never
@@ -221,11 +212,11 @@ export default function App() {
       setMsgs(item.messages);
       setView("student");
     } else if (item.mode === "lesson") {
-      setLessonFresh(item.messages[item.messages.length - 1]?.content || "");
+      setLessonOut(item.messages[item.messages.length - 1]?.content || "");
       setTopic(item.title);
       setView("lesson");
     } else {
-      setEssayFresh(item.messages[item.messages.length - 1]?.content || "");
+      setEssayOut(item.messages[item.messages.length - 1]?.content || "");
       setView("essay");
     }
   };
@@ -241,8 +232,8 @@ export default function App() {
     setActiveId(null);
     setMsgs([]);
     setInput("");
-    setLessonFresh("");
-    setEssayFresh("");
+    setLessonOut("");
+    setEssayOut("");
     setEssay("");
     setTopic("");
     setErr("");
@@ -274,62 +265,6 @@ export default function App() {
     }
   };
 
-  /* ---- re-translate visible output when the language is switched ----
-     Switching TR/EN used to relabel the UI while leaving the generated
-     document in the old language. Send it back through the model instead,
-     preserving the structural labels the renderer parses. Each language is
-     translated at most once per document: the result is cached, so toggling
-     back and forth costs no further requests. */
-  useEffect(() => {
-    if (prevLang.current === null) {
-      prevLang.current = lang;
-      return;
-    }
-    const from = prevLang.current;
-    if (from === lang) return;
-    prevLang.current = lang;
-    if (!lessonOut && !essayOut) return;
-
-    let cancelled = false;
-    (async () => {
-      // Remember what is on screen under the language it was written in.
-      if (lessonOut) lessonCache.current[from] = lessonOut;
-      if (essayOut) essayCache.current[from] = essayOut;
-
-      const lessonHit = lessonOut ? lessonCache.current[lang] : null;
-      const essayHit = essayOut ? essayCache.current[lang] : null;
-
-      // Anything already translated is swapped in without touching the API.
-      if (lessonHit) setLessonOut(lessonHit);
-      if (essayHit) setEssayOut(essayHit);
-
-      const needLesson = lessonOut && !lessonHit;
-      const needEssay = essayOut && !essayHit;
-      if (!needLesson && !needEssay) return;
-
-      setTranslating(true);
-      if (needLesson) {
-        const out = await callApi("translate", [{ role: "user", content: lessonOut }], {});
-        if (!cancelled && out) {
-          lessonCache.current[lang] = out;
-          setLessonOut(out);
-        }
-      }
-      if (needEssay) {
-        const out = await callApi("translate", [{ role: "user", content: essayOut }], {});
-        if (!cancelled && out) {
-          essayCache.current[lang] = out;
-          setEssayOut(out);
-        }
-      }
-      if (!cancelled) setTranslating(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
-
   /* ---- student send ---- */
   const sendStudent = async () => {
     const text = input.trim();
@@ -348,11 +283,11 @@ export default function App() {
   /* ---- lesson generate ---- */
   const makeLesson = async () => {
     if (!topic.trim() || busy) return;
-    setLessonFresh("");
+    setLessonOut("");
     const messages = [{ role: "user", content: `Please create the lesson plan for: ${topic.trim()}` }];
     const reply = await callApi("lesson", messages, { topic: topic.trim(), duration: duration.trim() || undefined });
     if (reply) {
-      setLessonFresh(reply);
+      setLessonOut(reply);
       pushHistory("lesson", topic.trim(), [...messages, { role: "assistant", content: reply }]);
     }
   };
@@ -360,11 +295,11 @@ export default function App() {
   /* ---- essay grade ---- */
   const gradeIt = async () => {
     if (!essay.trim() || busy) return;
-    setEssayFresh("");
+    setEssayOut("");
     const messages = [{ role: "user", content: essay.trim().slice(0, 12000) }];
     const reply = await callApi("essay", messages, {});
     if (reply) {
-      setEssayFresh(reply);
+      setEssayOut(reply);
       const title = (lang === "tr" ? "Kompozisyon: " : "Essay: ") + essay.trim().slice(0, 30);
       pushHistory("essay", title, [...messages, { role: "assistant", content: reply }]);
     }
@@ -375,16 +310,6 @@ export default function App() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     });
-  };
-
-  /* ---- output setters: a new document resets its translation cache ---- */
-  const setLessonFresh = (text) => {
-    lessonCache.current = text ? { [lang]: text } : {};
-    setLessonOut(text);
-  };
-  const setEssayFresh = (text) => {
-    essayCache.current = text ? { [lang]: text } : {};
-    setEssayOut(text);
   };
 
   /* ---- essay score parsing ---- */
@@ -664,7 +589,7 @@ export default function App() {
                   <button
                     className="role-card"
                     onClick={() => {
-                      setLessonFresh("");
+                      setLessonOut("");
                       setActiveId(null);
                       setView("lesson");
                     }}
@@ -676,7 +601,7 @@ export default function App() {
                   <button
                     className="role-card"
                     onClick={() => {
-                      setEssayFresh("");
+                      setEssayOut("");
                       setEssay("");
                       setActiveId(null);
                       setView("essay");
@@ -749,7 +674,6 @@ export default function App() {
                   </button>
                   {err && <div className="error">{err}</div>}
                 </div>
-                {translating && <div className="translating">{t.translating}</div>}
                 {lessonOut &&
                   (() => {
                     const L = parseLesson(lessonOut);
@@ -841,7 +765,6 @@ export default function App() {
                   </button>
                   {err && <div className="error">{err}</div>}
                 </div>
-                {translating && <div className="translating">{t.translating}</div>}
                 {essayOut && (
                   <div className="result">
                     {(() => {
