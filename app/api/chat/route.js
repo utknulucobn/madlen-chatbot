@@ -8,6 +8,46 @@ const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const TR_WORDS = new Set(["ve","bir","bu","için","ile","olarak","daha","çok","gibi","ama","de","da","ne","her","en","ki","olan","olduğu","kadar","sonra","değil","şey","olduğunu","ancak","ise","hem","böyle","yani"]);
 const EN_WORDS = new Set(["the","and","of","to","in","is","that","it","for","with","as","was","on","are","this","be","have","not","but","they","from","which","their","there","would"]);
 
+// School-subject vocabulary, so a one-word topic with no distinctive spelling
+// ("Cell", "Energy", "Kesirler") is still decided here rather than guessed at
+// by the model. Words spelled identically in both languages (atom, DNA, plan)
+// are deliberately absent - they carry no signal.
+const EN_TOPIC = new Set([
+  "cell","cells","energy","force","forces","motion","matter","molecule","gravity","light","sound",
+  "heat","magnet","magnets","electricity","circuit","plant","plants","animal","animals","human",
+  "body","blood","digestion","respiration","ecosystem","climate","weather","rock","rocks","volcano",
+  "earthquake","planet","planets","star","stars","moon","earth","water","cycle","evolution","gene",
+  "genes","bacteria","virus","muscle","skeleton","nutrition","seed","leaf","root","soil","air",
+  "fraction","fractions","decimal","decimals","angle","angles","triangle","triangles","circle",
+  "square","equation","equations","number","numbers","addition","subtraction","multiplication",
+  "division","geometry","algebra","probability","statistics","ratio","percentage","graph","shapes",
+  "war","revolution","empire","republic","history","geography","map","maps","population","migration",
+  "democracy","government","constitution","independence","century","civilisation","civilization",
+  "grammar","verb","verbs","noun","nouns","adjective","adjectives","sentence","sentences","essay",
+  "poem","poetry","story","stories","reading","writing","vocabulary","tense","tenses","letter",
+  "solar","system","law","universe","temperature","speed","mass","volume","mixture","acid","base",
+  "salt","metal","wave","mirror","lens","food","chain","habitat","season","photosynthesis","mitosis",
+  "meiosis","diffusion","osmosis","fossil","desert","forest","ocean","river","mountain","island",
+]);
+
+const TR_TOPIC = new Set([
+  "hücre","hücreler","enerji","kuvvet","kuvvetler","hareket","madde","molekül","yerçekimi","ışık",
+  "ses","ısı","mıknatıs","elektrik","devre","bitki","bitkiler","hayvan","hayvanlar","insan","vücut",
+  "kan","sindirim","solunum","ekosistem","iklim","hava","kaya","kayaçlar","volkan","deprem","gezegen",
+  "gezegenler","yıldız","yıldızlar","dünya","döngü","evrim","gen","genler","bakteri","virüs","kas",
+  "iskelet","beslenme","tohum","yaprak","kök","toprak",
+  "kesir","kesirler","ondalık","açı","açılar","üçgen","üçgenler","çember","kare","denklem","denklemler",
+  "sayı","sayılar","toplama","çıkarma","çarpma","bölme","geometri","cebir","olasılık","istatistik",
+  "oran","yüzde","grafik","fonksiyon","fonksiyonlar","şekiller",
+  "savaş","devrim","imparatorluk","cumhuriyet","tarih","coğrafya","harita","haritalar","nüfus","göç",
+  "demokrasi","hükümet","anayasa","bağımsızlık","yüzyıl","uygarlık","medeniyet",
+  "dilbilgisi","fiil","fiiller","isim","isimler","sıfat","sıfatlar","cümle","cümleler","kompozisyon",
+  "şiir","hikaye","hikâye","okuma","yazma","kelime","sözcük","zaman","zamanlar","harf","noktalama",
+  "fotosentez","sistem","sistemler","yasa","yasalar","evren","sıcaklık","hız","kütle","hacim","karışım",
+  "asit","baz","tuz","metal","dalga","dalgalar","ayna","mercek","besin","zincir","yaşam","mevsim",
+  "mevsimler","mitoz","mayoz","difüzyon","osmoz","fosil","çöl","orman","okyanus","nehir","dağ","ada",
+]);
+
 function detectLang(text) {
   const t = String(text || "").trim();
   if (t.length < 2) return null;
@@ -20,8 +60,17 @@ function detectLang(text) {
   let tr = 0;
   let en = 0;
   for (const w of words) {
-    if (TR_WORDS.has(w)) tr++;
-    if (EN_WORDS.has(w)) en++;
+    if (TR_WORDS.has(w) || TR_TOPIC.has(w)) tr++;
+    // English plurals are regular enough to strip, so "volcanoes" and
+    // "ecosystems" match the singular entries in the list.
+    const stem = w.endsWith("ies")
+      ? `${w.slice(0, -3)}y`
+      : w.endsWith("es")
+      ? w.slice(0, -2)
+      : w.endsWith("s")
+      ? w.slice(0, -1)
+      : w;
+    if (EN_WORDS.has(w) || EN_TOPIC.has(w) || EN_TOPIC.has(stem)) en++;
   }
   if (tr > en) return "Turkish";
   if (en > tr) return "English";
